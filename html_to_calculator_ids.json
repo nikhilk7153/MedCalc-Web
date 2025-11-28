@@ -1,0 +1,141 @@
+{
+  "anion-gap.html": [
+    39,
+    63,
+    64,
+    65,
+    66,
+    67
+  ],
+  "apache-ii.html": [
+    28
+  ],
+  "body-weight-suite.html": [
+    6,
+    10,
+    60,
+    61,
+    62
+  ],
+  "calcium-correction.html": [
+    7
+  ],
+  "caprini.html": [
+    36
+  ],
+  "cardiac-risk-index.html": [
+    17
+  ],
+  "centor-score.html": [
+    20
+  ],
+  "cha2ds2-vasc.html": [
+    4
+  ],
+  "charlson-cci.html": [
+    32
+  ],
+  "child-pugh.html": [
+    15
+  ],
+  "ckd-epi.html": [
+    3
+  ],
+  "creatinine-clearance.html": [
+    2
+  ],
+  "curb-65.html": [
+    45
+  ],
+  "estimated-conception.html": [
+    68
+  ],
+  "estimated-due-date.html": [
+    13
+  ],
+  "fena.html": [
+    40
+  ],
+  "feverpain.html": [
+    33
+  ],
+  "fibrosis-4.html": [
+    19
+  ],
+  "framingham-risk.html": [
+    46
+  ],
+  "free-water-deficit.html": [
+    38
+  ],
+  "gestational-age.html": [
+    69
+  ],
+  "glasgow-blatchford.html": [
+    27
+  ],
+  "glasgow-coma-score.html": [
+    21
+  ],
+  "has-bled.html": [
+    25
+  ],
+  "heart-score.html": [
+    18
+  ],
+  "homa-ir.html": [
+    31
+  ],
+  "ldl-calculated.html": [
+    44
+  ],
+  "maintenance-fluids.html": [
+    22
+  ],
+  "mdrd-gfr.html": [
+    9
+  ],
+  "mean-arterial-pressure.html": [
+    5
+  ],
+  "meld-na.html": [
+    23
+  ],
+  "mme.html": [
+    49
+  ],
+  "perc-rule.html": [
+    48
+  ],
+  "psi.html": [
+    29
+  ],
+  "qtc.html": [
+    11,
+    56,
+    57,
+    58,
+    59
+  ],
+  "serum-osmolality.html": [
+    30
+  ],
+  "sirs.html": [
+    51
+  ],
+  "sodium-correction.html": [
+    26
+  ],
+  "sofa.html": [
+    43
+  ],
+  "steroid-conversion.html": [
+    24
+  ],
+  "wells-dvt.html": [
+    16
+  ],
+  "wells-pe.html": [
+    8
+  ]
+}

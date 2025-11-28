@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estimated Due Date</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Estimated Due Date</h1>
+        </header>
+
+        <form id="edd-form" class="space-y-6">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please review the highlighted fields.</span>
+            </div>
+
+            <section class="space-y-4">
+                <div>
+                    <label for="lmp" class="block text-sm font-medium text-gray-700">Last menstrual period (LMP)</label>
+                    <input type="date" id="lmp" class="form-input" required>
+                    <p class="helper-text">Enter the first day of the last menstrual period.</p>
+                </div>
+                <div>
+                    <label for="cycle-length" class="block text-sm font-medium text-gray-700">Typical cycle length (days)</label>
+                    <input type="number" id="cycle-length" min="15" max="45" step="1" class="form-input" placeholder="28" required>
+                </div>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Calculate Due Date
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Estimated Due Date</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Date</p>
+                <p id="result-value" class="text-3xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+
+            const formatDate = (value) => {
+                if (!value) return '';
+                const [year, month, day] = value.split('-');
+                return `${month}/${day}/${year}`;
+            };
+
+            const collectPayload = () => {
+                const lmpValue = document.getElementById('lmp').value;
+                const cycleLength = parseInt(document.getElementById('cycle-length').value, 10);
+
+                if (!lmpValue) throw new Error('Please select the LMP date.');
+                if (!Number.isFinite(cycleLength)) throw new Error('Cycle length is required.');
+
+                return {
+                    menstrual_date: formatDate(lmpValue),
+                    cycle_length: cycleLength,
+                };
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent = value || '—';
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'edd-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'estimated-due-date',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

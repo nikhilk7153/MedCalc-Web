@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caprini Score (2005)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-6xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Caprini Score (2005)</h1>
+        </header>
+
+        <form id="caprini-form" class="space-y-8">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please complete age, sex, BMI, and select all applicable criteria.</span>
+            </div>
+
+            <section class="grid md:grid-cols-3 gap-6">
+                <div>
+                    <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
+                    <input type="number" id="age" min="0" max="120" step="1" class="form-input" placeholder="e.g., 58" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sex</label>
+                    <div class="radio-toggle" id="sex-group">
+                        <input type="radio" name="sex" id="sex-male" value="Male" checked>
+                        <label for="sex-male">Male</label>
+                        <input type="radio" name="sex" id="sex-female" value="Female">
+                        <label for="sex-female">Female</label>
+                    </div>
+                </div>
+                <div>
+                    <label for="bmi" class="block text-sm font-medium text-gray-700">BMI (kg/m²)</label>
+                    <input type="number" id="bmi" min="10" max="80" step="0.1" class="form-input" placeholder="e.g., 27.4" required>
+                </div>
+            </section>
+
+            <section class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label for="surgery-type" class="block text-sm font-medium text-gray-700">Surgery type</label>
+                    <select id="surgery-type" class="form-input">
+                        <option value="none">None</option>
+                        <option value="minor">Minor</option>
+                        <option value="major">Major (>45 min)</option>
+                        <option value="laparoscopic">Laparoscopic / arthroscopic</option>
+                        <option value="elective major lower extremity arthroplasty">Elective major LE arthroplasty</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="mobility" class="block text-sm font-medium text-gray-700">Mobility</label>
+                    <select id="mobility" class="form-input">
+                        <option value="normal">Normal, out of bed</option>
+                        <option value="on bed rest">Medical patient on bed rest</option>
+                        <option value="confined to bed >72 hours">Confined to bed >72 hours</option>
+                    </select>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-3">Events in the past month</h2>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <label class="option-pill"><input type="checkbox" id="major-surgery"> <span>Major surgery</span></label>
+                    <label class="option-pill"><input type="checkbox" id="chf"> <span>CHF</span></label>
+                    <label class="option-pill"><input type="checkbox" id="sepsis"> <span>Sepsis</span></label>
+                    <label class="option-pill"><input type="checkbox" id="pneumonia"> <span>Pneumonia</span></label>
+                    <label class="option-pill"><input type="checkbox" id="plaster-cast"> <span>Immobilizing plaster cast</span></label>
+                    <label class="option-pill"><input type="checkbox" id="fracture"> <span>Hip / pelvis / leg fracture</span></label>
+                    <label class="option-pill"><input type="checkbox" id="stroke"> <span>Stroke</span></label>
+                    <label class="option-pill"><input type="checkbox" id="trauma"> <span>Multiple trauma</span></label>
+                    <label class="option-pill"><input type="checkbox" id="spinal-injury"> <span>Acute spinal cord injury</span></label>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-3">Venous/clotting history</h2>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <label class="option-pill"><input type="checkbox" id="varicose"> <span>Varicose veins</span></label>
+                    <label class="option-pill"><input type="checkbox" id="swollen-legs"> <span>Current swollen legs</span></label>
+                    <label class="option-pill"><input type="checkbox" id="central-access"> <span>Current central venous access</span></label>
+                    <label class="option-pill"><input type="checkbox" id="prior-dvt"> <span>Previous DVT</span></label>
+                    <label class="option-pill"><input type="checkbox" id="prior-pe"> <span>Previous PE</span></label>
+                    <label class="option-pill"><input type="checkbox" id="family-thrombosis"> <span>Family history of thrombosis</span></label>
+                    <label class="option-pill"><input type="checkbox" id="factor-v"> <span>Positive Factor V Leiden</span></label>
+                    <label class="option-pill"><input type="checkbox" id="prothrombin"> <span>Positive prothrombin 20210A</span></label>
+                    <label class="option-pill"><input type="checkbox" id="homocysteine"> <span>Elevated homocysteine</span></label>
+                    <label class="option-pill"><input type="checkbox" id="lupus-anticoagulant"> <span>Positive lupus anticoagulant</span></label>
+                    <label class="option-pill"><input type="checkbox" id="anticardiolipin"> <span>Elevated anticardiolipin antibody</span></label>
+                    <label class="option-pill"><input type="checkbox" id="hit"> <span>Heparin-induced thrombocytopenia</span></label>
+                    <label class="option-pill"><input type="checkbox" id="thrombophilia"> <span>Other thrombophilia</span></label>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-3">Other history</h2>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <label class="option-pill"><input type="checkbox" id="ibd"> <span>Inflammatory bowel disease</span></label>
+                    <label class="option-pill"><input type="checkbox" id="ami"> <span>Acute myocardial infarction</span></label>
+                    <label class="option-pill"><input type="checkbox" id="copd"> <span>Chronic obstructive pulmonary disease</span></label>
+                    <label class="option-pill"><input type="checkbox" id="malignancy"> <span>Present or previous malignancy</span></label>
+                </div>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Calculate Caprini Score
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Caprini Score</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Total</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const checkbox = (id) => document.getElementById(id).checked;
+            const currentSex = () =>
+                (document.querySelector('input[name="sex"]:checked') || { value: 'Male' }).value;
+
+            const collectPayload = () => {
+                const age = parseInt(document.getElementById('age').value, 10);
+                const bmi = parseFloat(document.getElementById('bmi').value);
+                if (!Number.isFinite(age) || !Number.isFinite(bmi)) {
+                    throw new Error('Age and BMI are required.');
+                }
+
+                const payload = {
+                    age: [age, 'years'],
+                    sex: currentSex(),
+                    'Surgery Type': document.getElementById('surgery-type').value,
+                    'Mobility': document.getElementById('mobility').value,
+                    'Body Mass Index (BMI)': [bmi, 'kg/m^2'],
+                    'Major Surgery in the last month': checkbox('major-surgery'),
+                    'Congestive Heart Failure in the last month': checkbox('chf'),
+                    'Sepsis in the last month': checkbox('sepsis'),
+                    'Pneumonia in the last month': checkbox('pneumonia'),
+                    'Immobilizing plaster cast in the last month': checkbox('plaster-cast'),
+                    'Hip, pelvis, or leg fracture in the last month': checkbox('fracture'),
+                    'Stroke in the last month': checkbox('stroke'),
+                    'Multiple trauma in the last month': checkbox('trauma'),
+                    'Acute spinal cord injury causing paralysis in the last month': checkbox('spinal-injury'),
+                    'Varicose veins': checkbox('varicose'),
+                    'Current swollen legs': checkbox('swollen-legs'),
+                    'Current central venous access': checkbox('central-access'),
+                    'Previously documented Deep Vein Thrombosis': checkbox('prior-dvt'),
+                    'Previously Documented Pulmonary Embolism': checkbox('prior-pe'),
+                    'Family history of thrombosis': checkbox('family-thrombosis'),
+                    'Positive Factor V Leiden': checkbox('factor-v'),
+                    'Positive prothrombin 20210A': checkbox('prothrombin'),
+                    'Elevated serum homocysteine': checkbox('homocysteine'),
+                    'Positive lupus anticoagulant': checkbox('lupus-anticoagulant'),
+                    'Elevated anticardiolipin antibody': checkbox('anticardiolipin'),
+                    'Heparin-induced thrombocytopenia': checkbox('hit'),
+                    'Other congenital or acquired thrombophilia': checkbox('thrombophilia'),
+                    'History of inflammatory bowel disease': checkbox('ibd'),
+                    'Acute Myocardial infarction': checkbox('ami'),
+                    'Chronic Obstructive Pulmonary Disease': checkbox('copd'),
+                    'Present or previous malignancy': checkbox('malignancy'),
+                };
+
+                // Duplicate keys expected by python module
+                payload.major_surgery_last_month = payload['Major Surgery in the last month'];
+                payload.chf_last_month = payload['Congestive Heart Failure in the last month'];
+                payload.stroke_last_month = payload['Stroke in the last month'];
+                payload.immobilizing_plaster_cast = payload['Immobilizing plaster cast in the last month'];
+
+                return payload;
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'caprini-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'caprini-score-for-venous-thromboembolism-2005',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

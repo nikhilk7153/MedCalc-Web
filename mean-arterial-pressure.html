@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mean Arterial Pressure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Mean Arterial Pressure (MAP)</h1>
+        </header>
+
+        <form id="map-form" class="space-y-6">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please review the highlighted fields.</span>
+            </div>
+
+            <section class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label for="sbp" class="block text-sm font-medium text-gray-700">Systolic BP (mm Hg)</label>
+                    <input type="number" id="sbp" class="form-input" placeholder="e.g., 120" min="1" required>
+                </div>
+                <div>
+                    <label for="dbp" class="block text-sm font-medium text-gray-700">Diastolic BP (mm Hg)</label>
+                    <input type="number" id="dbp" class="form-input" placeholder="e.g., 70" min="1" required>
+                </div>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition" data-label="Compute MAP">
+                    Compute MAP
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Mean Arterial Pressure</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">MAP (mm Hg)</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+
+            const collectPayload = () => {
+                const sbp = parseFloat(document.getElementById('sbp').value);
+                const dbp = parseFloat(document.getElementById('dbp').value);
+
+                if (!Number.isFinite(sbp) || sbp <= 0) {
+                    throw new Error('Please enter a valid systolic blood pressure.');
+                }
+                if (!Number.isFinite(dbp) || dbp <= 0) {
+                    throw new Error('Please enter a valid diastolic blood pressure.');
+                }
+
+                return {
+                    sys_bp: [sbp, 'mm Hg'],
+                    dia_bp: [dbp, 'mm Hg'],
+                };
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'map-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'mean-arterial-pressure-map',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

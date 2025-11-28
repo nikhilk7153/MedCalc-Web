@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wells Criteria (PE)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+    <style>
+        .cards-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .criterion-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1rem;
+            background: #f9fafb;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .criterion-card input {
+            width: 20px;
+            height: 20px;
+            accent-color: #2563eb;
+        }
+        .criterion-card label {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #1f2937;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-5xl space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Wells Criteria for Pulmonary Embolism</h1>
+        </header>
+
+        <form id="wells-pe-form" class="space-y-6">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please review the selections below.</span>
+            </div>
+
+            <section class="cards-grid">
+                <div class="criterion-card">
+                    <input type="checkbox" id="previous-pe">
+                    <label for="previous-pe">Prior pulmonary embolism</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="immobilization">
+                    <label for="immobilization">Immobilization ≥3 days</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="malignancy">
+                    <label for="malignancy">Recent malignancy treatment</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="pe-number-one">
+                    <label for="pe-number-one">PE most likely diagnosis</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="surgery-recent">
+                    <label for="surgery-recent">Surgery within 4 weeks</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="previous-dvt">
+                    <label for="previous-dvt">Previous DVT</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="hemoptysis">
+                    <label for="hemoptysis">Hemoptysis</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="clinical-dvt">
+                    <label for="clinical-dvt">Clinical signs of DVT</label>
+                </div>
+                <div class="criterion-card">
+                    <label for="heart-rate" class="text-sm font-medium text-gray-700 flex-1">Heart rate (beats/min)</label>
+                    <input type="number" id="heart-rate" class="form-input flex-1" placeholder="e.g., 100">
+                </div>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Calculate Wells Score
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Wells Score</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">PE score</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+
+            const collectPayload = () => {
+                const heartRate = parseFloat(document.getElementById('heart-rate').value);
+                if (!Number.isFinite(heartRate) || heartRate <= 0) {
+                    throw new Error('Enter a valid heart rate.');
+                }
+
+                return {
+                    'Heart Rate or Pulse': [heartRate, 'beats/min'],
+                    'Previously Documented Pulmonary Embolism': document.getElementById('previous-pe').checked,
+                    'Immobilization for at least 3 days': document.getElementById('immobilization').checked,
+                    'Malignancy with treatment within 6 months or palliative': document.getElementById('malignancy').checked,
+                    'Pulmonary Embolism is #1 diagnosis OR equally likely': document.getElementById('pe-number-one').checked,
+                    'Surgery in the previous 4 weeks': document.getElementById('surgery-recent').checked,
+                    'Previously documented Deep Vein Thrombosis': document.getElementById('previous-dvt').checked,
+                    'Hemoptysis': document.getElementById('hemoptysis').checked,
+                    'Clinical signs and symptoms of Deep Vein Thrombosis': document.getElementById('clinical-dvt').checked,
+                };
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'wells-pe-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'wells-criteria-for-pulmonary-embolism',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+
+

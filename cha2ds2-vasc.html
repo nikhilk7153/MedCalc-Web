@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHA2DS2-VASc Score</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+    <style>
+        .option-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .option-pill {
+            border: 1px solid #d1d5db;
+            border-radius: 9999px;
+            padding: 0.45rem 1rem;
+            font-size: 0.9rem;
+            color: #374151;
+            background-color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.15s ease;
+        }
+        .option-pill input {
+            accent-color: #2563eb;
+        }
+        .option-pill input[type="radio"],
+        .option-pill input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+        .sex-pill {
+            border-radius: 0.75rem;
+            border: 1px solid #d1d5db;
+            padding: 0.4rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.15s ease;
+        }
+        .sex-pill input {
+            accent-color: #2563eb;
+        }
+        .sex-pill.active {
+            background-color: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-5xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">CHA2DS2-VASc Score</h1>
+        </header>
+
+        <form id="cha2ds2-form" class="space-y-8">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please review the fields below.</span>
+            </div>
+
+            <section class="space-y-4">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
+                        <input type="number" id="age" min="0" step="1" class="form-input" placeholder="e.g., 70" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sex</label>
+                        <div class="option-grid" id="sex-pills">
+                            <label class="sex-pill active">
+                                <input type="radio" name="sex" value="male" checked> Male
+                            </label>
+                            <label class="sex-pill">
+                                <input type="radio" name="sex" value="female"> Female
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Risk factors</label>
+                    <div class="option-grid">
+                        <label class="option-pill">
+                            <input type="checkbox" id="chf"> CHF
+                        </label>
+                        <label class="option-pill">
+                            <input type="checkbox" id="hypertension"> Hypertension
+                        </label>
+                        <label class="option-pill">
+                            <input type="checkbox" id="vascular-disease"> Vascular disease
+                        </label>
+                        <label class="option-pill">
+                            <input type="checkbox" id="stroke"> Stroke
+                        </label>
+                        <label class="option-pill">
+                            <input type="checkbox" id="tia"> TIA
+                        </label>
+                        <label class="option-pill">
+                            <input type="checkbox" id="thromboembolism"> Thromboembolism
+                        </label>
+                        <label class="option-pill">
+                            <input type="checkbox" id="diabetes"> Diabetes
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Calculate Score
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">CHA2DS2-VASc Score</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Score</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const resultValue = document.getElementById('result-value');
+            const explanationPanel = document.getElementById('result-explanation-panel');
+            const explanationText = document.getElementById('result-explanation');
+            const resultContainer = document.getElementById('result-container');
+
+            const sexPills = document.querySelectorAll('#sex-pills .sex-pill');
+            sexPills.forEach((pill) => {
+                pill.addEventListener('click', () => {
+                    document.querySelectorAll('#sex-pills .sex-pill').forEach((p) => p.classList.remove('active'));
+                    pill.classList.add('active');
+                    pill.querySelector('input').checked = true;
+                });
+            });
+
+            const collectPayload = () => {
+                const age = parseInt(document.getElementById('age').value, 10);
+                if (!Number.isFinite(age)) throw new Error('Valid age is required.');
+
+                const sexRadio = document.querySelector('input[name="sex"]:checked');
+                if (!sexRadio) throw new Error('Select sex.');
+
+                return {
+                    age: [age, 'years'],
+                    sex: sexRadio.value === 'male' ? 'Male' : 'Female',
+                    chf: document.getElementById('chf').checked,
+                    hypertension: document.getElementById('hypertension').checked,
+                    vascular_disease: document.getElementById('vascular-disease').checked,
+                    stroke: document.getElementById('stroke').checked,
+                    tia: document.getElementById('tia').checked,
+                    thromboembolism: document.getElementById('thromboembolism').checked,
+                    diabetes: document.getElementById('diabetes').checked,
+                };
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                resultValue.textContent = value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    explanationText.textContent = result.explanation;
+                    explanationPanel.classList.remove('hidden');
+                } else {
+                    explanationPanel.classList.add('hidden');
+                }
+                resultContainer.classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'cha2ds2-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'cha2ds2-vasc-score-for-atrial-fibrillation-stroke-risk',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

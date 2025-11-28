@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charlson Comorbidity Index</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-5xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Charlson Comorbidity Index</h1>
+        </header>
+
+        <form id="cci-form" class="space-y-8">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please fill out age and select all relevant comorbidities.</span>
+            </div>
+
+            <section class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
+                    <input type="number" id="age" min="0" max="120" step="1" class="form-input" placeholder="e.g., 64" required>
+                </div>
+                <div>
+                    <label for="liver-disease" class="block text-sm font-medium text-gray-700">Liver disease</label>
+                    <select id="liver-disease" class="form-input">
+                        <option value="none">None</option>
+                        <option value="mild">Mild</option>
+                        <option value="moderate to severe">Moderate to severe</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="diabetes" class="block text-sm font-medium text-gray-700">Diabetes mellitus</label>
+                    <select id="diabetes" class="form-input">
+                        <option value="none or diet-controlled">None / diet-controlled</option>
+                        <option value="uncomplicated">Uncomplicated</option>
+                        <option value="end-organ damage">End-organ damage</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="solid-tumor" class="block text-sm font-medium text-gray-700">Solid tumor</label>
+                    <select id="solid-tumor" class="form-input">
+                        <option value="none">None</option>
+                        <option value="localized">Localized</option>
+                        <option value="metastatic">Metastatic</option>
+                    </select>
+                </div>
+            </section>
+
+            <section class="grid md:grid-cols-3 gap-4">
+                <label class="option-pill">
+                    <input type="checkbox" id="mi">
+                    <span>Myocardial infarction</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="chf">
+                    <span>Congestive heart failure</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="pvd">
+                    <span>Peripheral vascular disease</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="cva">
+                    <span>Cerebrovascular accident</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="tia">
+                    <span>History of TIA</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="dementia">
+                    <span>Dementia</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="copd">
+                    <span>Chronic pulmonary disease</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="ctd">
+                    <span>Connective tissue disease</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="pud">
+                    <span>Peptic ulcer disease</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="hemiplegia">
+                    <span>Hemiplegia</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="ckd">
+                    <span>Moderate/severe CKD</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="leukemia">
+                    <span>Leukemia</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="lymphoma">
+                    <span>Lymphoma</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="aids">
+                    <span>AIDS</span>
+                </label>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Calculate CCI
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">CCI Result</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Score</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+
+            const collectPayload = () => {
+                const age = parseInt(document.getElementById('age').value, 10);
+                if (!Number.isFinite(age)) throw new Error('Age');
+
+                return {
+                    age: [age, 'years'],
+                    'Myocardial infarction': document.getElementById('mi').checked,
+                    'Congestive Heart Failure': document.getElementById('chf').checked,
+                    'Peripheral vascular disease': document.getElementById('pvd').checked,
+                    'Cerebrovascular Accident': document.getElementById('cva').checked,
+                    'Transient Ischemic Attacks History': document.getElementById('tia').checked,
+                    Dementia: document.getElementById('dementia').checked,
+                    'Chronic Pulmonary Disease': document.getElementById('copd').checked,
+                    'Connective tissue disease': document.getElementById('ctd').checked,
+                    'Peptic ulcer disease': document.getElementById('pud').checked,
+                    'Liver disease severity': document.getElementById('liver-disease').value,
+                    'Diabetes mellitus': document.getElementById('diabetes').value,
+                    Hemiplegia: document.getElementById('hemiplegia').checked,
+                    'Moderate to severe Chronic Kidney Disease': document.getElementById('ckd').checked,
+                    'Solid tumor': document.getElementById('solid-tumor').value,
+                    Leukemia: document.getElementById('leukemia').checked,
+                    Lymphoma: document.getElementById('lymphoma').checked,
+                    AIDS: document.getElementById('aids').checked,
+                };
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'cci-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'charlson-comorbidity-index-cci',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

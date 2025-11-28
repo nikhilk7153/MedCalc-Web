@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Water Deficit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Free Water Deficit</h1>
+        </header>
+
+        <form id="fwd-form" class="space-y-6">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please enter age, sex, weight, and serum sodium.</span>
+            </div>
+
+            <section class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
+                    <input type="number" id="age" min="0" max="120" step="1" class="form-input" placeholder="e.g., 62" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sex</label>
+                    <div class="radio-toggle" id="sex-group">
+                        <input type="radio" name="sex" id="sex-male" value="Male" checked>
+                        <label for="sex-male">Male</label>
+                        <input type="radio" name="sex" id="sex-female" value="Female">
+                        <label for="sex-female">Female</label>
+                    </div>
+                </div>
+            </section>
+
+            <section class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label for="weight" class="block text-sm font-medium text-gray-700">Weight</label>
+                    <div class="field-combo">
+                        <input type="number" id="weight" min="1" step="0.1" class="combo-input" placeholder="e.g., 70" required>
+                        <select id="weight-unit" class="combo-select">
+                            <option value="kg">kg</option>
+                            <option value="lbs">lbs</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="sodium" class="block text-sm font-medium text-gray-700">Serum sodium</label>
+                    <div class="field-combo">
+                        <input type="number" id="sodium" min="100" max="200" step="0.1" class="combo-input" placeholder="e.g., 150" required>
+                        <select id="sodium-unit" class="combo-select">
+                            <option value="mEq/L">mEq/L</option>
+                            <option value="mmol/L">mmol/L</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Calculate Deficit
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Estimated Deficit</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Liters</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const collectPayload = () => {
+                const age = parseInt(document.getElementById('age').value, 10);
+                const weight = parseFloat(document.getElementById('weight').value);
+                const sodium = parseFloat(document.getElementById('sodium').value);
+
+                if (![age, weight, sodium].every(Number.isFinite)) {
+                    throw new Error('All numeric fields are required.');
+                }
+
+                return {
+                    age: [age, 'years'],
+                    sex: (document.querySelector('input[name="sex"]:checked') || { value: 'Male' }).value,
+                    weight: [weight, document.getElementById('weight-unit').value],
+                    Sodium: [sodium, document.getElementById('sodium-unit').value],
+                };
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'fwd-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'free-water-deficit',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SOFA Score</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css" />
+    <style>
+        .sofa-step-button {
+            flex: 1;
+            min-width: 140px;
+            padding: 0.65rem 0.75rem;
+            border-radius: 9999px;
+            border: 1px solid #c7d2fe;
+            background: #eef2ff;
+            color: #3730a3;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+        .sofa-step-button.active {
+            background: #1d4ed8;
+            color: #fff;
+            border-color: #1d4ed8;
+            box-shadow: 0 10px 15px -8px rgba(37, 99, 235, 0.5);
+        }
+        .sofa-panel {
+            display: none;
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            background: #f9fafb;
+        }
+        .sofa-panel.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-5xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Sequential Organ Failure Assessment (SOFA)</h1>
+        </header>
+
+        <form id="sofa-form" class="space-y-6">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Complete all required physiologic parameters.</span>
+            </div>
+
+            <div class="flex flex-wrap gap-3" id="sofa-step-nav">
+                <button type="button" class="sofa-step-button active" data-step="resp">1. Respiratory</button>
+                <button type="button" class="sofa-step-button" data-step="coag">2. Coagulation & CNS</button>
+                <button type="button" class="sofa-step-button" data-step="liver-renal">3. Liver & Renal</button>
+                <button type="button" class="sofa-step-button" data-step="hemo">4. Hemodynamics</button>
+            </div>
+
+            <section class="sofa-panel active" data-step-panel="resp">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Respiratory status</h2>
+                <p class="text-sm text-gray-500 mb-4">Enter arterial blood gas details and ventilatory support.</p>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">PaO₂ (mm Hg)</label>
+                        <input type="number" id="pao2" min="0" step="1" class="form-input" placeholder="e.g., 90" required />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">FiO₂ (%)</label>
+                        <input type="number" id="fio2" min="21" max="100" step="1" class="form-input" placeholder="e.g., 40" required />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Mechanical ventilation</label>
+                        <select id="mechanical-ventilation" class="form-input">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">CPAP in use</label>
+                        <select id="cpap" class="form-input">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sofa-panel" data-step-panel="coag">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Coagulation & Neurologic</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Platelet count</label>
+                        <div class="field-combo">
+                            <input type="number" id="platelets" min="0" step="1000" class="combo-input" placeholder="e.g., 180000" required />
+                            <select id="platelet-unit" class="combo-select">
+                                <option value="µL">per µL</option>
+                                <option value="mL">per mL</option>
+                                <option value="L">per L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Glasgow Coma Score</label>
+                        <input type="number" id="gcs" min="3" max="15" step="1" class="form-input" placeholder="e.g., 14" required />
+                    </div>
+                </div>
+            </section>
+
+            <section class="sofa-panel" data-step-panel="liver-renal">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Liver & Renal</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Bilirubin</label>
+                        <div class="field-combo">
+                            <input type="number" id="bilirubin" min="0" step="0.1" class="combo-input" placeholder="e.g., 1.8" required />
+                            <select id="bilirubin-unit" class="combo-select">
+                                <option value="mg/dL">mg/dL</option>
+                                <option value="µmol/L">µmol/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Creatinine</label>
+                        <div class="field-combo">
+                            <input type="number" id="creatinine" min="0" step="0.01" class="combo-input" placeholder="e.g., 1.4" required />
+                            <select id="creatinine-unit" class="combo-select">
+                                <option value="mg/dL">mg/dL</option>
+                                <option value="µmol/L">µmol/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Urine output (mL/day)</label>
+                        <input type="number" id="urine-output" min="0" step="10" class="form-input" placeholder="e.g., 1200" />
+                    </div>
+                </div>
+            </section>
+
+            <section class="sofa-panel" data-step-panel="hemo">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Hemodynamics & Vasopressors</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Hypotension present</label>
+                        <select id="hypotension" class="form-input">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Systolic BP (mm Hg)</label>
+                        <input type="number" id="sys-bp" min="0" step="1" class="form-input" placeholder="e.g., 95" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Diastolic BP (mm Hg)</label>
+                        <input type="number" id="dia-bp" min="0" step="1" class="form-input" placeholder="e.g., 60" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Dopamine (µg/kg/min)</label>
+                        <input type="number" id="dopamine" min="0" step="0.1" class="form-input" placeholder="e.g., 0" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Dobutamine (µg/kg/min)</label>
+                        <input type="number" id="dobutamine" min="0" step="0.1" class="form-input" placeholder="e.g., 0" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Epinephrine (µg/kg/min)</label>
+                        <input type="number" id="epinephrine" min="0" step="0.01" class="form-input" placeholder="e.g., 0" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Norepinephrine (µg/kg/min)</label>
+                        <input type="number" id="norepinephrine" min="0" step="0.01" class="form-input" placeholder="e.g., 0" />
+                    </div>
+                </div>
+            </section>
+
+            <div class="pt-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <p class="text-sm text-gray-500">Use the step tabs above to verify each organ system before calculating.</p>
+                <button id="calculate-btn" type="submit" class="md:w-auto w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Calculate SOFA Score
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Result</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Score</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const stepButtons = Array.from(document.querySelectorAll('.sofa-step-button'));
+            const panels = Array.from(document.querySelectorAll('.sofa-panel'));
+
+            const activateStep = (step) => {
+                stepButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.step === step));
+                panels.forEach((panel) =>
+                    panel.classList.toggle('active', panel.dataset.stepPanel === step)
+                );
+            };
+
+            stepButtons.forEach((button) => {
+                button.addEventListener('click', () => activateStep(button.dataset.step));
+            });
+
+            activateStep('resp');
+
+            const valueWithUnit = (valueId, unitId) => [
+                parseFloat(document.getElementById(valueId).value),
+                document.getElementById(unitId).value,
+            ];
+
+            const optionalNumber = (id) => {
+                const raw = document.getElementById(id).value;
+                if (raw === '') return 0;
+                const num = parseFloat(raw);
+                if (!Number.isFinite(num)) throw new Error('Invalid number');
+                return num;
+            };
+
+            const collectPayload = () => {
+                const pao2 = parseFloat(document.getElementById('pao2').value);
+                const fio2 = parseFloat(document.getElementById('fio2').value);
+                const platelets = parseFloat(document.getElementById('platelets').value);
+                const gcs = parseInt(document.getElementById('gcs').value, 10);
+                const bilirubin = parseFloat(document.getElementById('bilirubin').value);
+                const creatinine = parseFloat(document.getElementById('creatinine').value);
+
+                if (![pao2, fio2, platelets, gcs, bilirubin, creatinine].every(Number.isFinite)) {
+                    throw new Error('Please supply required lab values.');
+                }
+
+                return {
+                    pao2: [pao2, 'mm Hg'],
+                    fio2: [fio2, '%'],
+                    mechanical_ventilation:
+                        document.getElementById('mechanical-ventilation').value === 'true',
+                    cpap: document.getElementById('cpap').value === 'true',
+                    platelet_count: [platelets, document.getElementById('platelet-unit').value],
+                    gcs,
+                    bilirubin: [bilirubin, document.getElementById('bilirubin-unit').value],
+                    creatinine: [creatinine, document.getElementById('creatinine-unit').value],
+                    urine_output: document.getElementById('urine-output').value
+                        ? [parseFloat(document.getElementById('urine-output').value), 'mL/day']
+                        : undefined,
+                    hypotension: document.getElementById('hypotension').value === 'true',
+                    sys_bp: document.getElementById('sys-bp').value
+                        ? [parseFloat(document.getElementById('sys-bp').value), 'mm Hg']
+                        : undefined,
+                    dia_bp: document.getElementById('dia-bp').value
+                        ? [parseFloat(document.getElementById('dia-bp').value), 'mm Hg']
+                        : undefined,
+                    dopamine: [optionalNumber('dopamine'), 'µg/kg/min'],
+                    dobutamine: [optionalNumber('dobutamine'), 'µg/kg/min'],
+                    epinephrine: [optionalNumber('epinephrine'), 'µg/kg/min'],
+                    norepinephrine: [optionalNumber('norepinephrine'), 'µg/kg/min'],
+                };
+            };
+
+            const sanitizePayload = (payload) => {
+                const cleaned = { ...payload };
+                Object.keys(cleaned).forEach((key) => {
+                    if (
+                        cleaned[key] === undefined ||
+                        (Array.isArray(cleaned[key]) && !Number.isFinite(cleaned[key][0]))
+                    ) {
+                        delete cleaned[key];
+                    }
+                });
+                return cleaned;
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'sofa-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'sequential-organ-failure-assessment-sofa-score',
+                collectPayload: () => sanitizePayload(collectPayload()),
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

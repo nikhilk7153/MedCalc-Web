@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAS-BLED Score</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-4xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">HAS-BLED Score</h1>
+        </header>
+
+        <form id="has-bled-form" class="space-y-6">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Provide age, alcohol intake, and toggle the risk factors.</span>
+            </div>
+
+            <section class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
+                    <input type="number" id="age" min="18" max="120" step="1" class="form-input" placeholder="e.g., 72" required>
+                </div>
+                <div>
+                    <label for="alcohol" class="block text-sm font-medium text-gray-700">Number of alcoholic drinks per week</label>
+                    <input type="number" id="alcohol" min="0" step="1" class="form-input" placeholder="e.g., 4" required>
+                </div>
+            </section>
+
+            <section class="grid md:grid-cols-2 gap-4">
+                <label class="option-pill">
+                    <input type="checkbox" id="hypertension">
+                    <span>Hypertension (SBP &gt;160)</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="renal">
+                    <span>Renal disease</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="liver">
+                    <span>Liver disease</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="stroke">
+                    <span>Stroke history</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="bleeding">
+                    <span>Prior major bleeding</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="labile-inr">
+                    <span>Labile INR</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="medications">
+                    <span>Medications predisposing to bleeding</span>
+                </label>
+                <label class="option-pill">
+                    <input type="checkbox" id="medications-alt" class="hidden" disabled>
+                    <span class="hidden">placeholder</span>
+                </label>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Calculate HAS-BLED
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">HAS-BLED Score</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Score</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+
+            const collectPayload = () => {
+                const age = parseInt(document.getElementById('age').value, 10);
+                const drinks = parseInt(document.getElementById('alcohol').value, 10);
+
+                if (!Number.isFinite(age) || !Number.isFinite(drinks)) {
+                    throw new Error('Provide numeric age and drinks/week.');
+                }
+
+                return {
+                    age: [age, 'years'],
+                    'Number of Alcoholic Drinks Per Week': drinks,
+                    Hypertension: document.getElementById('hypertension').checked,
+                    'Renal disease criteria for the HAS-BLED rule': document.getElementById('renal').checked,
+                    'Liver disease criteria for the HAS-BLED rule': document.getElementById('liver').checked,
+                    Stroke: document.getElementById('stroke').checked,
+                    'Prior major bleeding or predisposition to bleeding': document.getElementById('bleeding').checked,
+                    'Labile international normalized ratio': document.getElementById('labile-inr').checked,
+                    'Medication usage predisposing to bleeding': document.getElementById('medications').checked,
+                };
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'has-bled-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'has-bled-score-for-major-bleeding-risk',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

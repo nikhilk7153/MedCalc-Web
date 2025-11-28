@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Framingham Risk Score</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css" />
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-5xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Framingham Risk Score</h1>
+            <p class="text-sm text-gray-500">Assess the 10-year risk for hard coronary heart disease using the patient’s lipids and risk factors.</p>
+        </header>
+
+        <div class="md:flex gap-8">
+            <form id="framingham-form" class="space-y-6 md:w-2/3">
+                <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                    <span id="error-text">Provide age, lipids, blood pressure, and risk factors.</span>
+                </div>
+
+                <section class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Age (20–79)</label>
+                        <input type="number" id="age" min="20" max="79" step="1" class="form-input" value="55" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sex</label>
+                        <div class="sex-toggle" id="sex-group">
+                            <button type="button" class="active" data-value="Male">Male</button>
+                            <button type="button" data-value="Female">Female</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Total cholesterol</label>
+                        <div class="field-combo">
+                            <input type="number" id="total-chol" min="0" step="0.1" class="combo-input" placeholder="e.g., 210" required />
+                            <select id="total-chol-unit" class="combo-select">
+                                <option value="mg/dL">mg/dL</option>
+                                <option value="mmol/L">mmol/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">HDL cholesterol</label>
+                        <div class="field-combo">
+                            <input type="number" id="hdl" min="0" step="0.1" class="combo-input" placeholder="e.g., 48" required />
+                            <select id="hdl-unit" class="combo-select">
+                                <option value="mg/dL">mg/dL</option>
+                                <option value="mmol/L">mmol/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Systolic BP (mm Hg)</label>
+                        <input type="number" id="sys-bp" min="80" max="250" step="1" class="form-input" placeholder="e.g., 135" required />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">BP medications</label>
+                        <div class="option-pill">
+                            <input type="checkbox" id="bp-meds" />
+                            <span>Patient is treated for BP</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Current smoker</label>
+                        <div class="option-pill">
+                            <input type="checkbox" id="smoker" />
+                            <span>Smokes currently</span>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="pt-2">
+                    <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                        Calculate 10-year Risk
+                    </button>
+                </div>
+            </form>
+
+            <aside class="md:w-1/3 space-y-4 mt-8 md:mt-0">
+                <div class="border border-gray-200 rounded-2xl p-5 bg-gray-50 space-y-3">
+                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Patient snapshot</h3>
+                    <ul class="space-y-2 text-sm text-gray-700" id="preview-list">
+                        <li><strong>Age:</strong> <span data-preview="age">55</span> years</li>
+                        <li><strong>Sex:</strong> <span data-preview="sex">Male</span></li>
+                        <li><strong>Smoker:</strong> <span data-preview="smoker">No</span></li>
+                        <li><strong>BP meds:</strong> <span data-preview="bp">No</span></li>
+                    </ul>
+                    <p class="text-xs text-gray-500">Preview updates as you edit fields. Use it to double-check before calculating.</p>
+                </div>
+
+                <section id="result-container" class="hidden rounded-2xl border p-6">
+                    <h2 class="text-xl font-semibold text-center text-gray-900">Estimated 10-year Risk</h2>
+                    <div class="mt-6 text-center">
+                        <p class="text-sm text-gray-500">Percent</p>
+                        <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+                    </div>
+                    <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                        <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                        <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+                    </details>
+                </section>
+            </aside>
+        </div>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+
+            const clampAge = (value) => {
+                const num = Number(value);
+                if (!Number.isFinite(num)) return 55;
+                return Math.min(79, Math.max(20, num));
+            };
+
+            const updatePreview = () => {
+                const ageValue = clampAge(document.getElementById('age').value);
+                document.getElementById('age').value = ageValue;
+                document.querySelector('[data-preview="age"]').textContent = document.getElementById('age').value || '—';
+                document.querySelector('[data-preview="sex"]').textContent =
+                    (document.querySelector('.sex-toggle button.active') || { dataset: { value: 'Male' } }).dataset.value;
+                document.querySelector('[data-preview="smoker"]').textContent = document.getElementById('smoker').checked ? 'Yes' : 'No';
+                document.querySelector('[data-preview="bp"]').textContent = document.getElementById('bp-meds').checked ? 'Yes' : 'No';
+            };
+
+            document.getElementById('age').addEventListener('input', () => updatePreview());
+
+            document.querySelectorAll('.sex-toggle button').forEach((button) => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('.sex-toggle button').forEach((btn) => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    updatePreview();
+                });
+            });
+
+            document.getElementById('smoker').addEventListener('change', updatePreview);
+            document.getElementById('bp-meds').addEventListener('change', updatePreview);
+            updatePreview();
+
+            const collectPayload = () => {
+                const age = parseInt(document.getElementById('age').value, 10);
+                const total = parseFloat(document.getElementById('total-chol').value);
+                const hdl = parseFloat(document.getElementById('hdl').value);
+                const sys = parseFloat(document.getElementById('sys-bp').value);
+                if (![age, total, hdl, sys].every(Number.isFinite)) {
+                    throw new Error('Numeric inputs are required.');
+                }
+
+                return {
+                    age: [age, 'years'],
+                    sex:
+                        (document.querySelector('.sex-toggle button.active') || { dataset: { value: 'Male' } }).dataset.value,
+                    'Total cholesterol': [total, document.getElementById('total-chol-unit').value],
+                    'high-density lipoprotein cholesterol': [hdl, document.getElementById('hdl-unit').value],
+                    'Systolic Blood Pressure': [sys, 'mm Hg'],
+                    smoker: document.getElementById('smoker').checked,
+                    'Blood pressure being treated with medicines': document.getElementById('bp-meds').checked,
+                };
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : `${value}%`;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'framingham-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'framingham-risk-score-for-hard-coronary-heart-disease',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

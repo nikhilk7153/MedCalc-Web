@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wells Criteria for DVT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+    <style>
+        .criterion-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            background: #f9fafb;
+        }
+        .criterion-card input {
+            width: 20px;
+            height: 20px;
+            accent-color: #2563eb;
+        }
+        .criterion-card label {
+            font-size: 0.95rem;
+            color: #111827;
+            font-weight: 500;
+        }
+        .criteria-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-4xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Wells Criteria for DVT</h1>
+        </header>
+
+        <form id="wells-dvt-form" class="space-y-6">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please check the criteria below.</span>
+            </div>
+
+            <section class="criteria-list">
+                <div class="criterion-card">
+                    <input type="checkbox" id="active-cancer">
+                    <label for="active-cancer">Active cancer (treatment within 6 months)</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="bedridden">
+                    <label for="bedridden">Bedridden recently >3 days</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="major-surgery">
+                    <label for="major-surgery">Major surgery within 12 weeks</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="calf-swelling">
+                    <label for="calf-swelling">Calf swelling &gt;3 cm compared to other leg</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="collateral-veins">
+                    <label for="collateral-veins">Collateral (nonvaricose) superficial veins present</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="leg-swollen">
+                    <label for="leg-swollen">Entire leg swollen</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="localized-tenderness">
+                    <label for="localized-tenderness">Localized tenderness along deep venous system</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="pitting-edema">
+                    <label for="pitting-edema">Pitting edema confined to symptomatic leg</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="paralysis">
+                    <label for="paralysis">Paralysis/paresis/recent plaster immobilization of leg</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="previous-dvt">
+                    <label for="previous-dvt">Previously documented DVT</label>
+                </div>
+                <div class="criterion-card">
+                    <input type="checkbox" id="alternative-diagnosis">
+                    <label for="alternative-diagnosis">Alternative diagnosis as likely or more likely</label>
+                </div>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Calculate DVT Score
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Wells DVT Score</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Score</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const checkbox = (id) => document.getElementById(id).checked;
+
+            const collectPayload = () => ({
+                active_cancer: checkbox('active-cancer'),
+                bedridden_for_atleast_3_days: checkbox('bedridden'),
+                major_surgery_in_last_12_weeks: checkbox('major-surgery'),
+                calf_swelling_3cm: checkbox('calf-swelling'),
+                collateral_superficial_veins: checkbox('collateral-veins'),
+                leg_swollen: checkbox('leg-swollen'),
+                localized_tenderness_on_deep_venuous_system: checkbox('localized-tenderness'),
+                pitting_edema_on_symptomatic_leg: checkbox('pitting-edema'),
+                paralysis_paresis_immobilization_in_lower_extreme: checkbox('paralysis'),
+                previous_dvt_documented: checkbox('previous-dvt'),
+                alternative_to_dvt_diagnosis: checkbox('alternative-diagnosis'),
+            });
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'wells-dvt-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'wells-criteria-for-dvt',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

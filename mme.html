@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MME Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css" />
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-4xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Morphine Milligram Equivalents</h1>
+        </header>
+
+        <section class="space-y-4">
+            <div class="grid md:grid-cols-3 gap-4">
+                <div>
+                    <label for="drug-select" class="block text-sm font-medium text-gray-700">Opioid</label>
+                    <select id="drug-select" class="form-input">
+                        <option value="Codeine">Codeine</option>
+                        <option value="FentaNYL buccal">FentaNYL buccal</option>
+                        <option value="FentANYL patch">FentaNYL patch</option>
+                        <option value="HYDROcodone">HYDROcodone</option>
+                        <option value="HYDROmorphone">HYDROmorphone</option>
+                        <option value="Methadone">Methadone</option>
+                        <option value="Morphine">Morphine</option>
+                        <option value="OxyCODONE">OxyCODONE</option>
+                        <option value="OxyMORphone">OxyMORphone</option>
+                        <option value="Tapentadol">Tapentadol</option>
+                        <option value="TraMADol">TraMADol</option>
+                        <option value="Buprenorphine">Buprenorphine</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Dose per administration</label>
+                    <div class="field-combo">
+                        <input type="number" id="dose-value" min="0" step="0.1" class="combo-input" placeholder="e.g., 10" />
+                        <select id="dose-unit" class="combo-select">
+                            <option value="mg">mg</option>
+                            <option value="µg">µg</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="doses-per-day" class="block text-sm font-medium text-gray-700">Doses per day</label>
+                    <input type="number" id="doses-per-day" min="0" step="1" class="form-input" placeholder="e.g., 3" />
+                </div>
+            </div>
+            <button id="add-med" class="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 w-full md:w-auto">
+                Add Medication
+            </button>
+        </section>
+
+        <section>
+            <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Current regimen</h2>
+            <div id="med-list" class="space-y-2 text-sm text-gray-700">
+                <p class="text-gray-500" id="empty-state">No medications added yet.</p>
+            </div>
+        </section>
+
+        <form id="mme-form" class="pt-4">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3 mb-4">
+                <span id="error-text">Add at least one medication.</span>
+            </div>
+            <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                Calculate Daily MME
+            </button>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Total Daily MME</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">MME/day</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const meds = [];
+            const medList = document.getElementById('med-list');
+            const emptyState = document.getElementById('empty-state');
+
+            const renderMedications = () => {
+                if (!meds.length) {
+                    emptyState.classList.remove('hidden');
+                    medList.querySelectorAll('.med-row').forEach((node) => node.remove());
+                    return;
+                }
+                emptyState.classList.add('hidden');
+                medList.querySelectorAll('.med-row').forEach((node) => node.remove());
+                meds.forEach((med, index) => {
+                    const row = document.createElement('div');
+                    row.className =
+                        'med-row flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2';
+                    row.innerHTML = `
+                        <div>
+                            <p class="font-medium text-gray-900">${med.name}</p>
+                            <p class="text-gray-600 text-sm">${med.dose} ${med.unit} × ${med.perDay} /day</p>
+                        </div>
+                        <button data-index="${index}" class="text-sm text-red-600 hover:text-red-800">Remove</button>
+                    `;
+                    row.querySelector('button').addEventListener('click', (event) => {
+                        meds.splice(parseInt(event.target.dataset.index, 10), 1);
+                        renderMedications();
+                    });
+                    medList.appendChild(row);
+                });
+            };
+
+            document.getElementById('add-med').addEventListener('click', (event) => {
+                event.preventDefault();
+                const name = document.getElementById('drug-select').value;
+                const dose = parseFloat(document.getElementById('dose-value').value);
+                const unit = document.getElementById('dose-unit').value;
+                const perDay = parseFloat(document.getElementById('doses-per-day').value);
+
+                if (!Number.isFinite(dose) || !Number.isFinite(perDay) || dose <= 0 || perDay <= 0) {
+                    alert('Enter a valid dose and doses/day.');
+                    return;
+                }
+
+                meds.push({ name, dose, unit, perDay });
+                document.getElementById('dose-value').value = '';
+                document.getElementById('doses-per-day').value = '';
+                renderMedications();
+            });
+
+            const buildPayload = () => {
+                if (!meds.length) throw new Error('Add at least one medication.');
+                const payload = {};
+                meds.forEach((med) => {
+                    payload[`${med.name} Dose`] = [med.dose, med.unit];
+                    payload[`${med.name} Dose Per Day`] = [med.perDay, 'per day'];
+                });
+                return payload;
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'mme-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'morphine-milligram-equivalents-mme-calculator',
+                collectPayload: buildPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

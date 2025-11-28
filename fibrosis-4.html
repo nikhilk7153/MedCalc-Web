@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fibrosis-4 Index</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">Fibrosis-4 (FIB-4) Index</h1>
+        </header>
+
+        <form id="fib4-form" class="space-y-6">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Make sure all inputs are provided.</span>
+            </div>
+
+            <section class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
+                    <input type="number" id="age" min="0" max="120" class="form-input" placeholder="e.g., 55" required>
+                </div>
+                <div>
+                    <label for="ast" class="block text-sm font-medium text-gray-700">AST (U/L)</label>
+                    <input type="number" id="ast" min="0" step="1" class="form-input" placeholder="e.g., 75" required>
+                </div>
+                <div>
+                    <label for="alt" class="block text-sm font-medium text-gray-700">ALT (U/L)</label>
+                    <input type="number" id="alt" min="0" step="1" class="form-input" placeholder="e.g., 90" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Platelet count</label>
+                    <div class="field-combo">
+                        <input type="number" id="platelet" min="0" class="combo-input" placeholder="e.g., 220000" required>
+                        <select id="platelet-unit" class="combo-select">
+                            <option value="µL">per µL</option>
+                            <option value="mL">per mL</option>
+                            <option value="L">per L</option>
+                        </select>
+                    </div>
+                    <p class="helper-text mt-2">Enter absolute count per selected volume.</p>
+                </div>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Compute FIB-4
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Fibrosis-4 Score</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Score</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+
+            const collectPayload = () => {
+                const age = parseInt(document.getElementById('age').value, 10);
+                const ast = parseFloat(document.getElementById('ast').value);
+                const alt = parseFloat(document.getElementById('alt').value);
+                const platelet = parseFloat(document.getElementById('platelet').value);
+
+                if (!Number.isFinite(age)) throw new Error('Enter age.');
+                if (!Number.isFinite(ast)) throw new Error('Enter AST.');
+                if (!Number.isFinite(alt)) throw new Error('Enter ALT.');
+                if (!Number.isFinite(platelet)) throw new Error('Enter platelet count.');
+
+                return {
+                    age: [age, 'years'],
+                    ast: [ast, 'U/L'],
+                    alt: [alt, 'U/L'],
+                    platelet_count: [platelet, document.getElementById('platelet-unit').value],
+                };
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'fib4-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'fibrosis-4-fib-4-index-for-liver-fibrosis',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

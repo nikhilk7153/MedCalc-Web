@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APACHE II Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-5xl calculator-card">
+        <header class="mb-8 text-center">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900 mt-2">APACHE II Score</h1>
+        </header>
+
+        <form id="apache-form" class="space-y-8">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please review the highlighted fields.</span>
+            </div>
+
+            <section class="space-y-4">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Patient Profile</h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
+                        <input type="number" id="age" min="0" step="1" class="form-input" placeholder="e.g., 64" required>
+                    </div>
+                    <div>
+                        <label for="gcs" class="block text-sm font-medium text-gray-700">Glasgow Coma Scale</label>
+                        <input type="number" id="gcs" min="3" max="15" step="1" class="form-input" placeholder="1–15" required>
+                        <p class="helper-text">Use total GCS score (3-15).</p>
+                    </div>
+                    <div>
+                        <label for="fio2" class="block text-sm font-medium text-gray-700">FiO₂ (%)</label>
+                        <input type="number" id="fio2" min="21" max="100" step="1" class="form-input" placeholder="e.g., 40" required>
+                        <p class="helper-text">Threshold of 50% determines PaO₂ vs A-a gradient input.</p>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="temperature" class="block text-sm font-medium text-gray-700">Temperature</label>
+                        <div class="field-combo mt-1">
+                            <input type="number" id="temperature" step="0.1" class="combo-input" placeholder="e.g., 37.2" required>
+                            <select id="temperature-unit" class="combo-select">
+                                <option value="celsius">°C</option>
+                                <option value="fahrenheit">°F</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="paO2" class="block text-sm font-medium text-gray-700">PaO₂ (mm Hg)</label>
+                        <input type="number" id="paO2" step="1" min="0" class="form-input" placeholder="Shown when FiO₂ < 50%">
+                    </div>
+                    <div>
+                        <label for="aa-gradient" class="block text-sm font-medium text-gray-700">A–a gradient (mm Hg)</label>
+                        <input type="number" id="aa-gradient" step="1" min="0" class="form-input" placeholder="Shown when FiO₂ ≥ 50%">
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Organ failure / immunocompromise</label>
+                        <div class="radio-toggle">
+                            <input type="radio" id="ofi-yes" name="ofi" value="true">
+                            <label for="ofi-yes">Yes</label>
+                            <input type="radio" id="ofi-no" name="ofi" value="false" checked>
+                            <label for="ofi-no">No</label>
+                        </div>
+                        <div id="surgery-type-wrapper" class="mt-3 hidden">
+                            <label for="surgery-type" class="block text-sm font-medium text-gray-700">Surgery category</label>
+                            <select id="surgery-type" class="form-input">
+                                <option value="Nonoperative">Nonoperative</option>
+                                <option value="Emergency">Emergency postop</option>
+                                <option value="Elective">Elective postop</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700 mb-2">Renal failure status</span>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" id="acute-renal"> Acute renal failure
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" id="chronic-renal"> Chronic renal failure
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Vital Signs</h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="heart-rate" class="block text-sm font-medium text-gray-700">Heart rate (beats/min)</label>
+                        <input type="number" id="heart-rate" min="1" class="form-input" placeholder="e.g., 96" required>
+                    </div>
+                    <div>
+                        <label for="resp-rate" class="block text-sm font-medium text-gray-700">Respiratory rate (breaths/min)</label>
+                        <input type="number" id="resp-rate" min="1" class="form-input" placeholder="e.g., 18" required>
+                    </div>
+                    <div>
+                        <label for="ph" class="block text-sm font-medium text-gray-700">Arterial pH</label>
+                        <input type="number" id="ph" min="6.8" max="7.8" step="0.01" class="form-input" placeholder="e.g., 7.40" required>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="sbp" class="block text-sm font-medium text-gray-700">Systolic BP (mm Hg)</label>
+                        <input type="number" id="sbp" min="0" class="form-input" placeholder="e.g., 120" required>
+                    </div>
+                    <div>
+                        <label for="dbp" class="block text-sm font-medium text-gray-700">Diastolic BP (mm Hg)</label>
+                        <input type="number" id="dbp" min="0" class="form-input" placeholder="e.g., 70" required>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Laboratory Data</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="sodium" class="block text-sm font-medium text-gray-700">Sodium</label>
+                        <div class="field-combo mt-1">
+                            <input type="number" id="sodium" step="0.1" class="combo-input" placeholder="e.g., 138" required>
+                            <select id="sodium-unit" class="combo-select">
+                                <option value="mmol/L">mmol/L</option>
+                                <option value="mEq/L">mEq/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="potassium" class="block text-sm font-medium text-gray-700">Potassium</label>
+                        <div class="field-combo mt-1">
+                            <input type="number" id="potassium" step="0.1" class="combo-input" placeholder="e.g., 4.2" required>
+                            <select id="potassium-unit" class="combo-select">
+                                <option value="mmol/L">mmol/L</option>
+                                <option value="mEq/L">mEq/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="creatinine" class="block text-sm font-medium text-gray-700">Creatinine</label>
+                        <div class="field-combo mt-1">
+                            <input type="number" id="creatinine" step="0.1" class="combo-input" placeholder="e.g., 1.2" required>
+                            <select id="creatinine-unit" class="combo-select">
+                                <option value="mg/dL">mg/dL</option>
+                                <option value="µmol/L">µmol/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="hematocrit" class="block text-sm font-medium text-gray-700">Hematocrit (%)</label>
+                        <input type="number" id="hematocrit" min="0" max="100" step="0.1" class="form-input" placeholder="e.g., 35" required>
+                    </div>
+                    <div>
+                        <label for="wbc" class="block text-sm font-medium text-gray-700">White blood cells</label>
+                        <div class="field-combo mt-1">
+                            <input type="number" id="wbc" step="1" class="combo-input" placeholder="cells per selected volume" required>
+                            <select id="wbc-unit" class="combo-select">
+                                <option value="µL">per µL</option>
+                                <option value="mL">per mL</option>
+                                <option value="L">per L</option>
+                            </select>
+                        </div>
+                        <p class="helper-text">Enter actual count (e.g., 10000 per µL, not “10”).</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="pt-4">
+                <button id="calculate-btn" type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition" data-label="Calculate APACHE II">
+                    Calculate APACHE II
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden mt-10 rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Result</h2>
+            <p id="result-meta" class="text-center text-sm text-gray-500 mt-1">APACHE II score interpretation.</p>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">APACHE II Score</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const fio2Input = document.getElementById('fio2');
+            const pao2Field = document.getElementById('paO2');
+            const gradientField = document.getElementById('aa-gradient');
+            const ofiYes = document.getElementById('ofi-yes');
+            const ofiNo = document.getElementById('ofi-no');
+            const surgeryWrapper = document.getElementById('surgery-type-wrapper');
+            const resultContainer = document.getElementById('result-container');
+            const resultValue = document.getElementById('result-value');
+            const resultExplanation = document.getElementById('result-explanation');
+            const resultExplanationPanel = document.getElementById('result-explanation-panel');
+
+            const toggleOxygenFields = () => {
+                const fio2 = parseFloat(fio2Input.value);
+                const useGradient = Number.isFinite(fio2) && fio2 >= 50;
+                pao2Field.parentElement.classList.toggle('hidden', useGradient);
+                gradientField.parentElement.classList.toggle('hidden', !useGradient);
+            };
+
+            fio2Input.addEventListener('input', toggleOxygenFields);
+            toggleOxygenFields();
+
+            const toggleSurgery = () => {
+                const needsSurgery = document.querySelector('input[name="ofi"]:checked')?.value === 'true';
+                surgeryWrapper.classList.toggle('hidden', !needsSurgery);
+            };
+
+            ofiYes.addEventListener('change', toggleSurgery);
+            ofiNo.addEventListener('change', toggleSurgery);
+
+            const ensureNumber = (id, label) => {
+                const value = parseFloat(document.getElementById(id).value);
+                if (!Number.isFinite(value)) throw new Error(label);
+                return value;
+            };
+
+            const ensureInt = (id, label, min, max) => {
+                const value = parseInt(document.getElementById(id).value, 10);
+                if (!Number.isFinite(value) || value < min || value > max) throw new Error(label);
+                return value;
+            };
+
+            const valueWithUnit = (valueId, unitId) => {
+                const value = ensureNumber(valueId, valueId);
+                const unit = document.getElementById(unitId).value;
+                return [value, unit];
+            };
+
+            const collectPayload = () => {
+                const missing = [];
+                const capture = (fn, label) => {
+                    try {
+                        return fn();
+                    } catch {
+                        missing.push(label);
+                        return null;
+                    }
+                };
+
+                const payload = {};
+
+                payload.age = [capture(() => ensureNumber('age', 'Age'), 'Age'), 'years'];
+                payload.gcs = capture(() => ensureInt('gcs', 'Glasgow Coma Scale', 3, 15), 'Glasgow Coma Scale');
+                payload.fio2 = [capture(() => ensureNumber('fio2', 'FiO2'), 'FiO2'), '%'];
+                payload.temperature = [
+                    capture(() => ensureNumber('temperature', 'Temperature'), 'Temperature'),
+                    document.getElementById('temperature-unit').value === 'fahrenheit'
+                        ? 'degrees fahrenheit'
+                        : 'degrees celsius',
+                ];
+                payload.sys_bp = [capture(() => ensureNumber('sbp', 'Systolic BP'), 'Systolic BP'), 'mm Hg'];
+                payload.dia_bp = [capture(() => ensureNumber('dbp', 'Diastolic BP'), 'Diastolic BP'), 'mm Hg'];
+                payload.heart_rate = [capture(() => ensureNumber('heart-rate', 'Heart rate'), 'Heart rate'), 'beats/min'];
+                payload.respiratory_rate = [capture(() => ensureNumber('resp-rate', 'Respiratory rate'), 'Respiratory rate'), 'breaths/min'];
+                payload.pH = capture(() => ensureNumber('ph', 'Arterial pH'), 'Arterial pH');
+
+                payload.sodium = capture(() => valueWithUnit('sodium', 'sodium-unit'), 'Sodium');
+                payload.potassium = capture(() => valueWithUnit('potassium', 'potassium-unit'), 'Potassium');
+                payload.creatinine = capture(() => valueWithUnit('creatinine', 'creatinine-unit'), 'Creatinine');
+                payload.hematocrit = [capture(() => ensureNumber('hematocrit', 'Hematocrit'), 'Hematocrit'), '%'];
+                payload.wbc = capture(() => valueWithUnit('wbc', 'wbc-unit'), 'White blood cells');
+
+                const fio2Value = payload.fio2[0];
+                if (Number.isFinite(fio2Value) && fio2Value >= 50) {
+                    payload.a_a_gradient = capture(() => ensureNumber('aa-gradient', 'A–a gradient'), 'A–a gradient');
+                } else {
+                    const pao2 = capture(() => ensureNumber('paO2', 'PaO2'), 'PaO2');
+                    payload.pao2 = [pao2, 'mm Hg'];
+                }
+
+                const organFailure = document.querySelector('input[name="ofi"]:checked')?.value === 'true';
+                payload.organ_failure_immunocompromise = organFailure;
+                if (organFailure) {
+                    payload.surgery_type = document.getElementById('surgery-type').value;
+                }
+
+                payload.acute_renal_failure = document.getElementById('acute-renal').checked;
+                payload.chronic_renal_failure = document.getElementById('chronic-renal').checked;
+
+                if (missing.length) {
+                    throw new Error(`Please complete: ${missing.join(', ')}`);
+                }
+
+                return payload;
+            };
+
+            const renderResult = (result) => {
+                resultValue.textContent =
+                    result.answer === null || typeof result.answer === 'undefined'
+                        ? '—'
+                        : result.answer;
+                if (result.explanation) {
+                    resultExplanation.textContent = result.explanation;
+                    resultExplanationPanel.classList.remove('hidden');
+                } else {
+                    resultExplanationPanel.classList.add('hidden');
+                }
+                resultContainer.classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'apache-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'apache-ii-score',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

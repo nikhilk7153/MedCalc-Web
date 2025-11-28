@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anion Gap Calculators</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-4xl calculator-card">
+        <header class="mb-8 text-center">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900 mt-2">Anion Gap Suite</h1>
+        </header>
+
+        <form id="anion-form" class="space-y-8">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please review the highlighted fields.</span>
+            </div>
+
+            <section class="space-y-3">
+                <h2 class="text-lg font-semibold text-gray-800">Calculator</h2>
+                <select id="calculator-select" class="form-input">
+                    <option value="anion-gap">Anion Gap</option>
+                    <option value="delta-gap">Delta Gap</option>
+                    <option value="delta-ratio">Delta Ratio</option>
+                    <option value="albumin-corrected-anion-gap">Albumin Corrected Anion Gap</option>
+                    <option value="albumin-corrected-delta-gap">Albumin Corrected Delta Gap</option>
+                    <option value="albumin-corrected-delta-ratio">Albumin Corrected Delta Ratio</option>
+                </select>
+                <p id="calculator-description" class="text-sm text-gray-600">
+                    Standard anion gap using sodium - (chloride + bicarbonate).
+                </p>
+            </section>
+
+            <section class="space-y-4">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Electrolytes</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="sodium-value" class="block text-sm font-medium text-gray-700">Sodium</label>
+                        <div class="mt-1 field-combo">
+                            <input type="number" id="sodium-value" step="0.1" required class="combo-input" placeholder="e.g., 138">
+                            <select id="sodium-unit" class="combo-select">
+                                <option value="mmol/L">mmol/L</option>
+                                <option value="mEq/L">mEq/L</option>
+                            </select>
+                        </div>
+                        <p class="helper-text">Input patient's sodium concentration.</p>
+                    </div>
+                    <div>
+                        <label for="chloride-value" class="block text-sm font-medium text-gray-700">Chloride</label>
+                        <div class="mt-1 field-combo">
+                            <input type="number" id="chloride-value" step="0.1" required class="combo-input" placeholder="e.g., 102">
+                            <select id="chloride-unit" class="combo-select">
+                                <option value="mmol/L">mmol/L</option>
+                                <option value="mEq/L">mEq/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="bicarbonate-value" class="block text-sm font-medium text-gray-700">Bicarbonate (HCO₃⁻)</label>
+                        <div class="mt-1 field-combo">
+                            <input type="number" id="bicarbonate-value" step="0.1" required class="combo-input" placeholder="e.g., 20">
+                            <select id="bicarbonate-unit" class="combo-select">
+                                <option value="mmol/L">mmol/L</option>
+                                <option value="mEq/L">mEq/L</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="albumin-field" class="space-y-4 hidden">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Albumin</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="albumin-value" class="block text-sm font-medium text-gray-700">Albumin</label>
+                        <div class="mt-1 field-combo">
+                            <input type="number" id="albumin-value" step="0.1" min="0" required class="combo-input" placeholder="e.g., 4.0">
+                            <select id="albumin-unit" class="combo-select">
+                                <option value="g/dL">g/dL</option>
+                                <option value="g/L">g/L</option>
+                            </select>
+                        </div>
+                        <p class="helper-text">Shown only for albumin-corrected formulas.</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="pt-4">
+                <button id="calculate-btn" type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition" data-label="Run Calculator">
+                    Run Calculator
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden mt-10 rounded-2xl border p-6">
+            <h2 id="result-title" class="text-xl font-semibold text-center text-gray-900">Result</h2>
+            <p id="result-meta" class="text-center text-sm text-gray-500 mt-1"></p>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Answer</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const CALCULATORS = {
+                'anion-gap': {
+                    label: 'Anion Gap',
+                    description: 'Standard anion gap = Na⁺ - (Cl⁻ + HCO₃⁻).',
+                    requiresAlbumin: false,
+                },
+                'delta-gap': {
+                    label: 'Delta Gap',
+                    description: 'Delta gap = anion gap - 12 to assess unmeasured anions.',
+                    requiresAlbumin: false,
+                },
+                'delta-ratio': {
+                    label: 'Delta Ratio',
+                    description: 'Delta ratio = delta gap / (24 - HCO₃⁻) to classify metabolic acidosis.',
+                    requiresAlbumin: false,
+                },
+                'albumin-corrected-anion-gap': {
+                    label: 'Albumin Corrected Anion Gap',
+                    description: 'Correct the anion gap when albumin deviates from 4 g/dL.',
+                    requiresAlbumin: true,
+                },
+                'albumin-corrected-delta-gap': {
+                    label: 'Albumin Corrected Delta Gap',
+                    description: 'Albumin-corrected anion gap minus 12.',
+                    requiresAlbumin: true,
+                },
+                'albumin-corrected-delta-ratio': {
+                    label: 'Albumin Corrected Delta Ratio',
+                    description: 'Albumin-corrected delta gap divided by (24 - HCO₃⁻).',
+                    requiresAlbumin: true,
+                },
+            };
+
+            const selector = document.getElementById('calculator-select');
+            const descriptionEl = document.getElementById('calculator-description');
+            const albuminField = document.getElementById('albumin-field');
+            const resultContainer = document.getElementById('result-container');
+            const resultTitle = document.getElementById('result-title');
+            const resultMeta = document.getElementById('result-meta');
+            const resultValue = document.getElementById('result-value');
+            const resultExplanationPanel = document.getElementById('result-explanation-panel');
+            const resultExplanation = document.getElementById('result-explanation');
+
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            let currentSlug = selector.value;
+
+            const getCurrentCalculator = () => CALCULATORS[currentSlug] || CALCULATORS['anion-gap'];
+
+            const updateCalculatorUI = () => {
+                const calc = getCurrentCalculator();
+                descriptionEl.textContent = calc.description;
+                albuminField.classList.toggle('hidden', !calc.requiresAlbumin);
+                resultContainer.classList.add('hidden');
+            };
+
+            selector.addEventListener('change', () => {
+                currentSlug = selector.value;
+                updateCalculatorUI();
+            });
+
+            updateCalculatorUI();
+
+            const capture = (fn, label, missing) => {
+                try {
+                    return fn();
+                } catch {
+                    missing.push(label);
+                    return null;
+                }
+            };
+
+            const valueWithUnit = (valueId, unitId) => {
+                const numericValue = parseFloat(document.getElementById(valueId).value);
+                if (!Number.isFinite(numericValue)) throw new Error();
+                const unit = document.getElementById(unitId).value;
+                return [numericValue, unit];
+            };
+
+            const collectPayload = () => {
+                if (!currentSlug || !CALCULATORS[currentSlug]) {
+                    throw new Error('Select a calculator.');
+                }
+
+                const missing = [];
+                const payload = {};
+
+                const sodium = capture(() => valueWithUnit('sodium-value', 'sodium-unit'), 'Sodium', missing);
+                const chloride = capture(() => valueWithUnit('chloride-value', 'chloride-unit'), 'Chloride', missing);
+                const bicarbonate = capture(() => valueWithUnit('bicarbonate-value', 'bicarbonate-unit'), 'Bicarbonate', missing);
+
+                if (sodium) payload['Sodium'] = sodium;
+                if (chloride) payload['Chloride'] = chloride;
+                if (bicarbonate) payload['Bicarbonate'] = bicarbonate;
+
+                if (getCurrentCalculator().requiresAlbumin) {
+                    const albumin = capture(() => valueWithUnit('albumin-value', 'albumin-unit'), 'Albumin', missing);
+                    if (albumin) payload['Albumin'] = albumin;
+                }
+
+                if (missing.length) {
+                    throw new Error(`Please complete: ${missing.join(', ')}`);
+                }
+
+                return payload;
+            };
+
+            const renderResult = (result) => {
+                const calc = getCurrentCalculator();
+                resultTitle.textContent = calc.label;
+                resultMeta.textContent = calc.description;
+
+                const value = result.answer ?? result.raw_score ?? result.score;
+                if (value === null || typeof value === 'undefined') {
+                    resultValue.textContent = '—';
+                } else {
+                    resultValue.textContent = typeof value === 'number' ? value : value;
+                }
+
+                if (result.explanation) {
+                    resultExplanation.textContent = result.explanation;
+                    resultExplanationPanel.classList.remove('hidden');
+                } else {
+                    resultExplanationPanel.classList.add('hidden');
+                }
+
+                resultContainer.classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'anion-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                collectPayload,
+                getEndpoint: () => `${apiBase}/api/calculators/${currentSlug}`,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

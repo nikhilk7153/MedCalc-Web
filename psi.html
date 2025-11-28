@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pneumonia Severity Index (PSI) Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css">
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-4xl calculator-card">
+        <header class="mb-8 text-center">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900 mt-2">Pneumonia Severity Index (PSI)</h1>
+        </header>
+
+        <form id="psi-form" class="space-y-8">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Please review the highlighted fields.</span>
+            </div>
+
+            <section class="space-y-4">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Demographics</h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
+                        <input type="number" id="age" min="0" step="1" required class="form-input" placeholder="e.g., 65">
+                    </div>
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700 mb-2">Sex</span>
+                        <div class="radio-toggle">
+                            <input type="radio" id="sex-male" name="sex" value="male" required>
+                            <label for="sex-male">Male</label>
+                            <input type="radio" id="sex-female" name="sex" value="female">
+                            <label for="sex-female">Female</label>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700 mb-2">Nursing home resident</span>
+                        <div class="radio-toggle">
+                            <input type="radio" id="nhr-yes" name="nursing_home_resident" value="true" required>
+                            <label for="nhr-yes">Yes</label>
+                            <input type="radio" id="nhr-no" name="nursing_home_resident" value="false">
+                            <label for="nhr-no">No</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Comorbidities</h2>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-700">Neoplastic disease</span>
+                        <div class="radio-toggle w-36">
+                            <input type="radio" id="neo-yes" name="neoplastic_disease" value="true" required>
+                            <label for="neo-yes">Yes</label>
+                            <input type="radio" id="neo-no" name="neoplastic_disease" value="false">
+                            <label for="neo-no">No</label>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-700">Liver disease history</span>
+                        <div class="radio-toggle w-36">
+                            <input type="radio" id="liver-yes" name="liver_disease" value="true" required>
+                            <label for="liver-yes">Yes</label>
+                            <input type="radio" id="liver-no" name="liver_disease" value="false">
+                            <label for="liver-no">No</label>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-700">Congestive Heart Failure</span>
+                        <div class="radio-toggle w-36">
+                            <input type="radio" id="chf-yes" name="chf" value="true" required>
+                            <label for="chf-yes">Yes</label>
+                            <input type="radio" id="chf-no" name="chf" value="false">
+                            <label for="chf-no">No</label>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-700">Cerebrovascular disease history</span>
+                        <div class="radio-toggle w-36">
+                            <input type="radio" id="cvd-yes" name="cerebrovascular_disease" value="true" required>
+                            <label for="cvd-yes">Yes</label>
+                            <input type="radio" id="cvd-no" name="cerebrovascular_disease" value="false">
+                            <label for="cvd-no">No</label>
+                                </div>
+                            </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-700">Renal disease history</span>
+                        <div class="radio-toggle w-36">
+                            <input type="radio" id="renal-yes" name="renal_disease" value="true" required>
+                            <label for="renal-yes">Yes</label>
+                            <input type="radio" id="renal-no" name="renal_disease" value="false">
+                            <label for="renal-no">No</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Clinical findings</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="heart-rate" class="block text-sm font-medium text-gray-700">Heart Rate or Pulse (beats/min)</label>
+                        <input type="number" id="heart-rate" min="0" step="1" required class="form-input" placeholder="e.g., 110">
+                    </div>
+                    <div>
+                        <label for="respiratory-rate" class="block text-sm font-medium text-gray-700">Respiratory rate (breaths/min)</label>
+                        <input type="number" id="respiratory-rate" min="0" step="1" required class="form-input" placeholder="e.g., 24">
+                    </div>
+                    <div>
+                        <label for="systolic-bp" class="block text-sm font-medium text-gray-700">Systolic Blood Pressure (mm Hg)</label>
+                        <input type="number" id="systolic-bp" min="0" step="1" required class="form-input" placeholder="e.g., 100">
+                    </div>
+                    <div>
+                        <label for="temperature" class="block text-sm font-medium text-gray-700">Temperature</label>
+                        <div class="mt-1 field-combo">
+                            <input type="number" id="temperature" step="0.1" required class="combo-input" placeholder="e.g., 38.1">
+                            <select id="temperature-unit" class="combo-select">
+                                <option value="celsius">°C</option>
+                                <option value="fahrenheit">°F</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="ph" class="block text-sm font-medium text-gray-700">Arterial pH</label>
+                        <input type="number" id="ph" step="0.01" min="6.5" max="8.0" required class="form-input" placeholder="e.g., 7.40">
+                    </div>
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700 mb-2">Altered mental status</span>
+                        <div class="radio-toggle">
+                            <input type="radio" id="ams-yes" name="altered_mental_status" value="true" required>
+                            <label for="ams-yes">Yes</label>
+                            <input type="radio" id="ams-no" name="altered_mental_status" value="false">
+                            <label for="ams-no">No</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Laboratory & Imaging</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="bun" class="block text-sm font-medium text-gray-700">Blood Urea Nitrogen (BUN)</label>
+                        <div class="mt-1 field-combo">
+                            <input type="number" id="bun" step="0.1" min="0" required class="combo-input" placeholder="e.g., 25">
+                            <select id="bun-unit" class="combo-select">
+                                <option value="mg/dL">mg/dL</option>
+                                <option value="mmol/L">mmol/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="sodium" class="block text-sm font-medium text-gray-700">Sodium</label>
+                        <div class="mt-1 field-combo">
+                            <input type="number" id="sodium" step="0.1" min="0" required class="combo-input" placeholder="e.g., 138">
+                            <select id="sodium-unit" class="combo-select">
+                                <option value="mmol/L">mmol/L</option>
+                                <option value="mEq/L">mEq/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="glucose" class="block text-sm font-medium text-gray-700">Glucose</label>
+                        <div class="mt-1 field-combo">
+                            <input type="number" id="glucose" step="0.1" min="0" required class="combo-input" placeholder="e.g., 120">
+                            <select id="glucose-unit" class="combo-select">
+                                <option value="mg/dL">mg/dL</option>
+                                <option value="mmol/L">mmol/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="hematocrit" class="block text-sm font-medium text-gray-700">Hematocrit (%)</label>
+                        <input type="number" id="hematocrit" min="0" max="100" step="0.1" required class="form-input" placeholder="e.g., 36">
+                    </div>
+                    <div>
+                        <label for="pao2" class="block text-sm font-medium text-gray-700">Partial pressure of oxygen</label>
+                        <div class="mt-1 field-combo">
+                            <input type="number" id="pao2" step="0.1" min="0" required class="combo-input" placeholder="e.g., 70">
+                            <select id="pao2-unit" class="combo-select">
+                                <option value="mm Hg">mm Hg</option>
+                                <option value="kPa">kPa</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700 mb-2">Pleural effusion on x-ray</span>
+                        <div class="radio-toggle">
+                            <input type="radio" id="pe-yes" name="pleural_effusion" value="true" required>
+                            <label for="pe-yes">Yes</label>
+                            <input type="radio" id="pe-no" name="pleural_effusion" value="false">
+                            <label for="pe-no">No</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="pt-4">
+                <button id="calculate-btn" type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition" data-label="Calculate with PSI Engine">
+                    Calculate with PSI Engine
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden mt-10 rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Result</h2>
+            <p id="result-meta" class="text-center text-sm text-gray-500 mt-1"></p>
+            <div class="mt-6 grid md:grid-cols-3 gap-6 text-center">
+                <div>
+                    <p class="text-sm text-gray-500">PSI Score</p>
+                    <p id="result-score" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Risk Class</p>
+                    <p id="result-class" class="text-3xl font-bold mt-1">—</p>
+            </div>
+                <div>
+                    <p class="text-sm text-gray-500">Recommendation</p>
+                    <p id="result-recommendation" class="text-lg font-semibold mt-1 text-gray-900">—</p>
+            </div>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View step-by-step explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slug = 'psi-score-pneumonia-severity-index-for-cap';
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const endpoint = `${apiBase}/api/calculators/${slug}`;
+            
+            const resultContainer = document.getElementById('result-container');
+            const resultScore = document.getElementById('result-score');
+            const resultClass = document.getElementById('result-class');
+            const resultRecommendation = document.getElementById('result-recommendation');
+            const resultMeta = document.getElementById('result-meta');
+            const resultExplanationPanel = document.getElementById('result-explanation-panel');
+            const resultExplanation = document.getElementById('result-explanation');
+
+            const themes = {
+                'Risk Class I': 'border-green-400 bg-green-50',
+                'Risk Class II': 'border-green-400 bg-green-50',
+                'Risk Class III': 'border-yellow-400 bg-yellow-50',
+                'Risk Class IV': 'border-orange-400 bg-orange-50',
+                'Risk Class V': 'border-red-400 bg-red-50',
+            };
+
+            const getRadioValue = (name) => {
+                const selected = document.querySelector(`input[name="${name}"]:checked`);
+                return selected ? selected.value : null;
+            };
+            
+            const requireNumber = (id) => {
+                const value = parseFloat(document.getElementById(id).value);
+                if (!Number.isFinite(value)) {
+                    throw new Error();
+                }
+                return value;
+            };
+
+            const requireBoolean = (name) => {
+                const value = getRadioValue(name);
+                if (value === null) {
+                    throw new Error();
+                }
+                return value === 'true';
+            };
+                
+            const collectPayload = () => {
+                const missing = [];
+                const ensure = (fn, label) => {
+                    try {
+                        return fn();
+                    } catch {
+                        missing.push(label);
+                        return null;
+                    }
+                };
+
+                const payload = {};
+
+                payload.age = [ensure(() => requireNumber('age'), 'Age'), 'years'];
+
+                const sexValue = getRadioValue('sex');
+                if (sexValue) {
+                    payload.sex = sexValue === 'female' ? 'Female' : 'Male';
+                } else {
+                    missing.push('Sex');
+                }
+
+                payload['Nursing home resident'] = ensure(() => requireBoolean('nursing_home_resident'), 'Nursing home resident');
+                payload['Neoplastic disease'] = ensure(() => requireBoolean('neoplastic_disease'), 'Neoplastic disease');
+                payload['Liver disease history'] = ensure(() => requireBoolean('liver_disease'), 'Liver disease history');
+                payload['Congestive Heart Failure'] = ensure(() => requireBoolean('chf'), 'Congestive Heart Failure');
+                payload['Cerebrovascular disease history'] = ensure(() => requireBoolean('cerebrovascular_disease'), 'Cerebrovascular disease history');
+                payload['Renal disease history'] = ensure(() => requireBoolean('renal_disease'), 'Renal disease history');
+                payload['Altered mental status'] = ensure(() => requireBoolean('altered_mental_status'), 'Altered mental status');
+                payload['Pleural effusion on x-ray'] = ensure(() => requireBoolean('pleural_effusion'), 'Pleural effusion on x-ray');
+
+                payload['Heart Rate or Pulse'] = [ensure(() => requireNumber('heart-rate'), 'Heart rate'), 'beats/min'];
+                payload['respiratory rate'] = [ensure(() => requireNumber('respiratory-rate'), 'Respiratory rate'), 'breaths/min'];
+                payload['Systolic Blood Pressure'] = [ensure(() => requireNumber('systolic-bp'), 'Systolic blood pressure'), 'mm Hg'];
+                payload.pH = ensure(() => requireNumber('ph'), 'Arterial pH');
+
+                const temperatureUnit = document.getElementById('temperature-unit').value === 'fahrenheit'
+                    ? 'degrees fahrenheit'
+                    : 'degrees celsius';
+                payload.Temperature = [ensure(() => requireNumber('temperature'), 'Temperature'), temperatureUnit];
+
+                payload['Blood Urea Nitrogen (BUN)'] = [ensure(() => requireNumber('bun'), 'BUN'), document.getElementById('bun-unit').value];
+                payload.Sodium = [ensure(() => requireNumber('sodium'), 'Sodium'), document.getElementById('sodium-unit').value];
+                payload.Glucose = [ensure(() => requireNumber('glucose'), 'Glucose'), document.getElementById('glucose-unit').value];
+                payload.Hematocrit = [ensure(() => requireNumber('hematocrit'), 'Hematocrit'), '%'];
+                payload['Partial pressure of oxygen'] = [ensure(() => requireNumber('pao2'), 'Partial pressure of oxygen'), document.getElementById('pao2-unit').value];
+
+                if (missing.length) {
+                    throw new Error(`Please complete: ${missing.join(', ')}`);
+                }
+                return payload;
+            };
+
+            const renderResult = (result) => {
+                const theme = themes[result.risk_class] || 'border-gray-200 bg-gray-50';
+                resultContainer.className = `mt-10 rounded-2xl border p-6 ${theme}`;
+                resultScore.textContent = result.score === null || typeof result.score === 'undefined' ? 'N/A' : result.score;
+                resultClass.textContent = result.risk_class || '—';
+                resultRecommendation.textContent = result.recommendation || '—';
+                resultMeta.textContent = result.is_class_i
+                    ? 'Meets PORT Risk Class I criteria.'
+                    : 'Risk class computed from PSI score.';
+
+                if (result.explanation) {
+                    resultExplanation.textContent = result.explanation;
+                    resultExplanationPanel.classList.remove('hidden');
+                } else {
+                    resultExplanationPanel.classList.add('hidden');
+                }
+
+                resultContainer.classList.remove('hidden');
+                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+
+            CalculatorPage.init({
+                formId: 'psi-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                endpoint,
+                buttonLabel: 'Calculate with PSI Engine',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+

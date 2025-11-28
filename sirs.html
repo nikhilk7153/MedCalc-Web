@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SIRS Criteria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./static/css/calculator.css" />
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
+        <header class="text-center space-y-2">
+            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
+            <h1 class="text-3xl font-bold text-gray-900">SIRS Criteria</h1>
+        </header>
+
+        <form id="sirs-form" class="space-y-6">
+            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
+                <span id="error-text">Enter vital signs, PaCO₂, and WBC values.</span>
+            </div>
+
+            <section class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Temperature</label>
+                    <div class="field-combo">
+                        <input type="number" id="temperature" step="0.1" class="combo-input" placeholder="e.g., 38.5" required />
+                        <select id="temperature-unit" class="combo-select">
+                            <option value="fahrenheit">°F</option>
+                            <option value="celsius">°C</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="heart-rate" class="block text-sm font-medium text-gray-700">Heart rate (bpm)</label>
+                        <input type="number" id="heart-rate" min="0" step="1" class="form-input" placeholder="e.g., 110" required />
+                    </div>
+                    <div>
+                        <label for="resp-rate" class="block text-sm font-medium text-gray-700">Respiratory rate (breaths/min)</label>
+                        <input type="number" id="resp-rate" min="0" step="1" class="form-input" placeholder="e.g., 24" required />
+                    </div>
+                </div>
+                <div>
+                    <label for="paco2" class="block text-sm font-medium text-gray-700">PaCO₂ (mm Hg)</label>
+                    <input type="number" id="paco2" min="0" step="0.1" class="form-input" placeholder="e.g., 30" required />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">White blood cell count</label>
+                    <div class="field-combo">
+                        <input type="number" id="wbc" min="0" step="100" class="combo-input" placeholder="e.g., 15000" required />
+                        <select id="wbc-unit" class="combo-select">
+                            <option value="mm^3">per mm³</option>
+                            <option value="µL">per µL</option>
+                            <option value="mL">per mL</option>
+                            <option value="L">per L</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <div class="pt-2">
+                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Count Criteria
+                </button>
+            </div>
+        </form>
+
+        <section id="result-container" class="hidden rounded-2xl border p-6">
+            <h2 class="text-xl font-semibold text-center text-gray-900">Criteria Met</h2>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">Total</p>
+                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            </div>
+            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
+                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
+                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            </details>
+        </section>
+    </div>
+
+    <script src="./static/js/calculator-page.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+
+            const collectPayload = () => {
+                const temp = parseFloat(document.getElementById('temperature').value);
+                const hr = parseFloat(document.getElementById('heart-rate').value);
+                const rr = parseFloat(document.getElementById('resp-rate').value);
+                const paco2 = parseFloat(document.getElementById('paco2').value);
+                const wbc = parseFloat(document.getElementById('wbc').value);
+                if (![temp, hr, rr, paco2, wbc].every(Number.isFinite)) {
+                    throw new Error('Numeric inputs are required.');
+                }
+
+                return {
+                    Temperature: [temp, document.getElementById('temperature-unit').value],
+                    'Heart Rate or Pulse': [hr, 'beats/min'],
+                    'respiratory rate': [rr, 'breaths/min'],
+                    PaCO2: [paco2, 'mm Hg'],
+                    'White blood cell count': [wbc, document.getElementById('wbc-unit').value],
+                };
+            };
+
+            const renderResult = (result) => {
+                const value = result.answer ?? result.raw_score ?? result.score;
+                document.getElementById('result-value').textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+                if (result.explanation) {
+                    document.getElementById('result-explanation').textContent = result.explanation;
+                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                }
+                document.getElementById('result-container').classList.remove('hidden');
+            };
+
+            CalculatorPage.init({
+                formId: 'sirs-form',
+                submitButtonId: 'calculate-btn',
+                errorBoxId: 'error-message',
+                errorTextId: 'error-text',
+                apiBase,
+                slug: 'sirs-criteria',
+                collectPayload,
+                onResult: renderResult,
+            });
+        });
+    </script>
+</body>
+</html>
+
