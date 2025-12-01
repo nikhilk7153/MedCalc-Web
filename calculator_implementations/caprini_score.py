@@ -97,8 +97,8 @@ The total Caprini Score is calculated by summing the points for each criterion.
         elif param == "bmi":
         
             if input_parameters["bmi"][0] > 25:
-                explanation += f"The patient's BMI is {input_parameters['bmi'][0]} kg/m^2, which is greater than 25 kg/m^2, and so we add 2 points to the total, making the current total {score} + 2 = {score + 2}.\n"
-                score += 2
+                explanation += f"The patient's BMI is {input_parameters['bmi'][0]} kg/m^2, which is greater than 25 kg/m^2, and so we add 1 point to the total, making the current total {score} + 1 = {score + 1}.\n"
+                score += 1
             else:
                 explanation += f"The patient's BMI is {input_parameters['bmi'][0]} kg/m^2, which is less than 25 kg/m^2, and so we add 0 points to the total, keeping the total at {score}.\n"
 

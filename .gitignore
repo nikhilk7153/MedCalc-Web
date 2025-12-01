@@ -14,7 +14,7 @@ benchmark_results_*.json
 benchmark_chunk_*.log
 benchmark_screenshots/
 test_data_chunk_*.csv
-test_data_sampled_3_per_calc.csv
+
 agent_results/
 
 # Environment
