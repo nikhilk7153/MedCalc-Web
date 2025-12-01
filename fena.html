@@ -7,77 +7,115 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">FENa Calculator</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-4xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">FENa</span>
+            </div>
+            <h1 class="page-title">Fractional Excretion Deck</h1>
+            <p class="page-subtitle">
+                Log paired serum/urine electrolytes in the lab tiles below. The deck computes FENa without any manual
+                conversions.
+            </p>
         </header>
 
-        <form id="fena-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please enter all four concentrations.</span>
+        <form id="fena-form" class="stacked-form" novalidate>
+            <div id="error-message" class="hidden callout callout-error">
+                <div class="callout-header">
+                    <span id="error-text">Please enter all four concentrations.</span>
+                </div>
             </div>
 
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label for="serum-sodium" class="block text-sm font-medium text-gray-700">Serum sodium</label>
-                    <div class="field-combo">
-                        <input type="number" id="serum-sodium" min="0" step="0.1" class="combo-input" placeholder="e.g., 140" required>
-                        <select id="serum-sodium-unit" class="combo-select">
-                            <option value="mEq/L">mEq/L</option>
-                            <option value="mmol/L">mmol/L</option>
-                        </select>
+            <div class="lab-strip-grid">
+                <article class="lab-card">
+                    <div class="lab-card__heading">
+                        <span class="lab-chip">Serum</span>
+                        <h3>Sodium</h3>
                     </div>
-                </div>
-                <div>
-                    <label for="serum-creatinine" class="block text-sm font-medium text-gray-700">Serum creatinine</label>
-                    <div class="field-combo">
-                        <input type="number" id="serum-creatinine" min="0" step="0.01" class="combo-input" placeholder="e.g., 1.3" required>
-                        <select id="serum-creatinine-unit" class="combo-select">
-                            <option value="mg/dL">mg/dL</option>
-                            <option value="µmol/L">µmol/L</option>
-                        </select>
+                    <p class="lab-card__helper">Use the chemistry panel value.</p>
+                    <div class="lab-card__controls">
+                        <div class="lab-combo">
+                            <input type="number" id="serum-sodium" min="0" step="any" class="lab-combo__input" placeholder="e.g., 140" required>
+                            <select id="serum-sodium-unit" class="lab-combo__select">
+                                <option value="mEq/L">mEq/L</option>
+                                <option value="mmol/L">mmol/L</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <label for="urine-sodium" class="block text-sm font-medium text-gray-700">Urine sodium</label>
-                    <div class="field-combo">
-                        <input type="number" id="urine-sodium" min="0" step="0.1" class="combo-input" placeholder="e.g., 45" required>
-                        <select id="urine-sodium-unit" class="combo-select">
-                            <option value="mEq/L">mEq/L</option>
-                            <option value="mmol/L">mmol/L</option>
-                        </select>
+                </article>
+                <article class="lab-card">
+                    <div class="lab-card__heading">
+                        <span class="lab-chip">Serum</span>
+                        <h3>Creatinine</h3>
                     </div>
-                </div>
-                <div>
-                    <label for="urine-creatinine" class="block text-sm font-medium text-gray-700">Urine creatinine</label>
-                    <div class="field-combo">
-                        <input type="number" id="urine-creatinine" min="0" step="0.1" class="combo-input" placeholder="e.g., 80" required>
-                        <select id="urine-creatinine-unit" class="combo-select">
-                            <option value="mg/dL">mg/dL</option>
-                            <option value="µmol/L">µmol/L</option>
-                        </select>
+                    <p class="lab-card__helper">Same draw as serum sodium.</p>
+                    <div class="lab-card__controls">
+                        <div class="lab-combo">
+                            <input type="number" id="serum-creatinine" min="0" step="any" class="lab-combo__input" placeholder="e.g., 1.3" required>
+                            <select id="serum-creatinine-unit" class="lab-combo__select">
+                                <option value="mg/dL">mg/dL</option>
+                                <option value="µmol/L">µmol/L</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </article>
+                <article class="lab-card">
+                    <div class="lab-card__heading">
+                        <span class="lab-chip">Urine</span>
+                        <h3>Sodium</h3>
+                    </div>
+                    <p class="lab-card__helper">Spot urine collected near the serum draw.</p>
+                    <div class="lab-card__controls">
+                        <div class="lab-combo">
+                            <input type="number" id="urine-sodium" min="0" step="any" class="lab-combo__input" placeholder="e.g., 45" required>
+                            <select id="urine-sodium-unit" class="lab-combo__select">
+                                <option value="mEq/L">mEq/L</option>
+                                <option value="mmol/L">mmol/L</option>
+                            </select>
+                        </div>
+                    </div>
+                </article>
+                <article class="lab-card">
+                    <div class="lab-card__heading">
+                        <span class="lab-chip">Urine</span>
+                        <h3>Creatinine</h3>
+                    </div>
+                    <p class="lab-card__helper">Ensure the unit matches the reported value.</p>
+                    <div class="lab-card__controls">
+                        <div class="lab-combo">
+                            <input type="number" id="urine-creatinine" min="0" step="any" class="lab-combo__input" placeholder="e.g., 80" required>
+                            <select id="urine-creatinine-unit" class="lab-combo__select">
+                                <option value="mg/dL">mg/dL</option>
+                                <option value="µmol/L">µmol/L</option>
+                            </select>
+                        </div>
+                    </div>
+                </article>
+            </div>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+            <p class="helper-text text-center mt-4">Do not convert units manually—use the dropdowns provided on each card.</p>
+
+            <div class="form-actions">
+                <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate FENa (%)">
                     Calculate FENa (%)
                 </button>
             </div>
         </form>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Fractional Excretion of Sodium</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">FENa (%)</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">FENa</p>
+                <h2>Fractional excretion of sodium</h2>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">%</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>

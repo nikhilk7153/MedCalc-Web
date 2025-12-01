@@ -6,47 +6,161 @@
     <title>Estimated Due Date</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
+    <style>
+        .timeline {
+            border-left: 2px dashed #c7d2fe;
+            margin-left: 0.75rem;
+            padding-left: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .timeline-step {
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1.25rem;
+            position: relative;
+            box-shadow: 0 15px 30px rgba(15, 23, 42, 0.05);
+        }
+        .timeline-step::before {
+            content: '';
+            position: absolute;
+            left: -1.2rem;
+            top: 1.5rem;
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 999px;
+            background-color: #4c1d95;
+            box-shadow: 0 0 0 4px rgba(76, 29, 149, 0.15);
+        }
+        .pill-note {
+            display: inline-flex;
+            padding: 0.3rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid #e0e7ff;
+            background-color: #f5f3ff;
+            color: #4c1d95;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Estimated Due Date</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">EDD</span>
+            </div>
+            <h1 class="page-title">Estimated Due Date Timeline</h1>
+            <p class="page-subtitle">
+                Walk through each checkpoint—last menstrual period, cycle length, and any adjustments—before generating the due date.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Steps</p>
+                    <p class="meta-value">LMP → cycle length → context</p>
+                </div>
+                <div>
+                    <p class="meta-label">Inputs</p>
+                    <p class="meta-value">Dates + optional ultrasound</p>
+                </div>
+                <div>
+                    <p class="meta-label">Output</p>
+                    <p class="meta-value">Estimated due date</p>
+                </div>
+            </div>
         </header>
 
-        <form id="edd-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please review the highlighted fields.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="edd-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span class="badge badge--alert">Action needed</span>
+                            <p id="error-text">Please review the highlighted fields.</p>
+                        </div>
+                    </div>
 
-            <section class="space-y-4">
-                <div>
-                    <label for="lmp" class="block text-sm font-medium text-gray-700">Last menstrual period (LMP)</label>
-                    <input type="date" id="lmp" class="form-input" required>
-                    <p class="helper-text">Enter the first day of the last menstrual period.</p>
-                </div>
-                <div>
-                    <label for="cycle-length" class="block text-sm font-medium text-gray-700">Typical cycle length (days)</label>
-                    <input type="number" id="cycle-length" min="15" max="45" step="1" class="form-input" placeholder="28" required>
-                </div>
-            </section>
+                    <div class="timeline">
+                        <article class="timeline-step">
+                            <div class="pill-note">Step 1 · Inputs</div>
+                            <h2 class="mt-2 text-lg font-semibold text-gray-900">Last menstrual period</h2>
+                            <p class="text-sm text-gray-500 mb-3">Enter the first day of the last menstrual period (LMP).</p>
+                            <input type="date" id="lmp" class="form-input" required>
+                        </article>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                        <article class="timeline-step">
+                            <div class="pill-note">Step 2 · Cycle details</div>
+                            <div class="section-grid section-grid--two">
+                                <div class="field-block">
+                                    <label class="field-label" for="cycle-length">Typical cycle length (days)</label>
+                                    <input type="number" id="cycle-length" min="15" max="45" step="1" class="form-input" placeholder="28" required>
+                                </div>
+                                <div class="field-block">
+                                    <label class="field-label" for="method-source">Dating method</label>
+                                    <select id="method-source" class="form-input">
+                                        <option value="LMP" selected>Last menstrual period</option>
+                                        <option value="1st trimester ultrasound">1st trimester ultrasound</option>
+                                        <option value="2nd trimester ultrasound">2nd trimester ultrasound</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </article>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate Due Date">
                     Calculate Due Date
                 </button>
             </div>
         </form>
+            </section>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Estimated Due Date</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Date</p>
-                <p id="result-value" class="text-3xl font-bold text-gray-900 mt-1">—</p>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <p class="badge badge--outline mb-2">Guidance</p>
+                    <h3>Cycle length tips</h3>
+                    <ul class="info-list">
+                        <li>Default is 28 days (Ovulation day 14).</li>
+                        <li>Shorter cycles (< 21 d) often advance the due date.</li>
+                        <li>Longer cycles delay ovulation; adjust accordingly.</li>
+                    </ul>
+                </div>
+                <div class="sidebar-card">
+                    <h3>Preferred methods</h3>
+                    <ul class="info-list">
+                        <li>Use ultrasound if LMP is uncertain.</li>
+                        <li>Document the source in case the benchmark question specifies it.</li>
+                        <li>Optional context fields do not impact the API payload.</li>
+                    </ul>
+                </div>
+                <div class="sidebar-card">
+                    <h3>Before you submit</h3>
+                    <ol class="steps-list">
+                        <li>Confirm both checkboxes in the form.</li>
+                        <li>Ensure the dating method matches the prompt.</li>
+                        <li>Return only the calculated due date.</li>
+                    </ol>
+                </div>
+            </aside>
+        </div>
+
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">EDD</p>
+                <h2>Estimated Due Date</h2>
+                <p class="result-subtitle">Result expressed as calendar date.</p>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">Date</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -65,14 +179,16 @@
             const collectPayload = () => {
                 const lmpValue = document.getElementById('lmp').value;
                 const cycleLength = parseInt(document.getElementById('cycle-length').value, 10);
-
                 if (!lmpValue) throw new Error('Please select the LMP date.');
                 if (!Number.isFinite(cycleLength)) throw new Error('Cycle length is required.');
 
-                return {
+                const payload = {
                     menstrual_date: formatDate(lmpValue),
                     cycle_length: cycleLength,
+                    dating_method: document.getElementById('method-source').value,
                 };
+
+                return payload;
             };
 
             const renderResult = (result) => {

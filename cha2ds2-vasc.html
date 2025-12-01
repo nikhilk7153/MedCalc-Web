@@ -3,131 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHA2DS2-VASc Score</title>
+    <title>CHA₂DS₂-VASc Score</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
-    <style>
-        .option-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-        .option-pill {
-            border: 1px solid #d1d5db;
-            border-radius: 9999px;
-            padding: 0.45rem 1rem;
-            font-size: 0.9rem;
-            color: #374151;
-            background-color: #fff;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            transition: all 0.15s ease;
-        }
-        .option-pill input {
-            accent-color: #2563eb;
-        }
-        .option-pill input[type="radio"],
-        .option-pill input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-        }
-        .sex-pill {
-            border-radius: 0.75rem;
-            border: 1px solid #d1d5db;
-            padding: 0.4rem 1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: all 0.15s ease;
-        }
-        .sex-pill input {
-            accent-color: #2563eb;
-        }
-        .sex-pill.active {
-            background-color: #2563eb;
-            color: #fff;
-            border-color: #2563eb;
-        }
-    </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-5xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">CHA2DS2-VASc Score</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">CHA₂DS₂-VASc</span>
+            </div>
+            <h1 class="page-title">Atrial Fibrillation Stroke Risk Worksheet</h1>
+            <p class="page-subtitle">
+                Capture admission demographics and comorbidities exactly as documented. Tabs stay locked until their required items are complete.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Panels</p>
+                    <p class="meta-value">2 sections</p>
+                </div>
+                <div>
+                    <p class="meta-label">Inputs</p>
+                    <p class="meta-value">Age · Sex · 7 risk toggles</p>
+                </div>
+                <div>
+                    <p class="meta-label">Output</p>
+                    <p class="meta-value">Score (points)</p>
+                </div>
+            </div>
         </header>
 
-        <form id="cha2ds2-form" class="space-y-8">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please review the fields below.</span>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="cha2ds2-form" class="tabbed-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span class="badge badge--alert">Action needed</span>
+                            <p id="error-text">Please review the highlighted fields.</p>
             </div>
+                    </div>
 
-            <section class="space-y-4">
-                <div class="grid md:grid-cols-3 gap-6">
-                    <div>
-                        <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
-                        <input type="number" id="age" min="0" step="1" class="form-input" placeholder="e.g., 70" required>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Sex</label>
-                        <div class="option-grid" id="sex-pills">
-                            <label class="sex-pill active">
-                                <input type="radio" name="sex" value="male" checked> Male
-                            </label>
-                            <label class="sex-pill">
-                                <input type="radio" name="sex" value="female"> Female
-                            </label>
+                    <div class="callout callout-info">
+                        <div class="callout-header">
+                            <span class="badge badge--neutral">Checklist</span>
+                            <h2>Use the baseline charted data</h2>
                         </div>
+                        <ul class="callout-list">
+                            <li>Reference the admission H&amp;P, problem list, and cardiology note.</li>
+                            <li>Switch tabs in order—later sections remain disabled until prior ones validate.</li>
+                            <li>Confirm every risk factor even when absent.</li>
+                        </ul>
                     </div>
+
+                    <div class="tab-list" role="tablist" aria-label="Input sections">
+                        <button type="button" class="tab-button" id="tab-demo-button" data-tab-target="tab-demographics" role="tab" aria-selected="true">
+                            <span>1. Demographics</span>
+                            <span class="badge">Age & sex</span>
+                        </button>
+                        <button type="button" class="tab-button" id="tab-risk-button" data-tab-target="tab-risk" role="tab" aria-selected="false">
+                            <span>2. Risk factors</span>
+                            <span class="badge">7 toggles</span>
+                        </button>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Risk factors</label>
-                    <div class="option-grid">
+                    <section id="tab-demographics" class="tab-panel active" role="tabpanel" aria-labelledby="tab-demo-button">
+                        <div class="panel-heading">
+                            <p class="panel-eyebrow">Step 1</p>
+                            <h2>Patient demographics</h2>
+                            <p class="panel-description">Age and sex drive several weightings in the score.</p>
+                        </div>
+                        <div class="section-grid section-grid--two">
+                            <div class="field-block">
+                                <label for="age" class="field-label">Age (years)</label>
+                                <input type="number" id="age" min="18" max="120" step="1" class="form-input" placeholder="e.g., 76" required>
+                                <p class="helper-text">Use whole years from the admission note.</p>
+                            </div>
+                            <div class="field-block">
+                                <span class="field-label">Sex (assigned at birth)</span>
+                                <div class="radio-toggle mt-1">
+                                    <input type="radio" id="sex-male" name="sex" value="male" required>
+                                    <label for="sex-male">Male</label>
+                                    <input type="radio" id="sex-female" name="sex" value="female">
+                                    <label for="sex-female">Female</label>
+                                </div>
+                                <p class="helper-text">Select whichever option matches the patient note.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tab-risk" class="tab-panel" role="tabpanel" aria-labelledby="tab-risk-button" hidden>
+                        <div class="panel-heading">
+                            <p class="panel-eyebrow">Step 2</p>
+                            <h2>Thromboembolic risk factors</h2>
+                            <p class="panel-description">Toggle every condition documented prior to therapy.</p>
+                        </div>
+                        <div class="section-grid">
+                            <div class="field-block">
+                                <label class="field-label">Select all that apply</label>
+                                <div class="option-board">
                         <label class="option-pill">
-                            <input type="checkbox" id="chf"> CHF
+                                        <input type="checkbox" id="chf"> Congestive heart failure
                         </label>
                         <label class="option-pill">
                             <input type="checkbox" id="hypertension"> Hypertension
                         </label>
                         <label class="option-pill">
+                                        <input type="checkbox" id="diabetes"> Diabetes mellitus
+                        </label>
+                        <label class="option-pill">
+                                        <input type="checkbox" id="stroke"> Stroke / TIA / thromboembolism
+                        </label>
+                        <label class="option-pill">
                             <input type="checkbox" id="vascular-disease"> Vascular disease
                         </label>
                         <label class="option-pill">
-                            <input type="checkbox" id="stroke"> Stroke
+                                        <input type="checkbox" id="age-75"> Age ≥ 75
                         </label>
                         <label class="option-pill">
-                            <input type="checkbox" id="tia"> TIA
+                                        <input type="checkbox" id="age-65"> Age 65–74
                         </label>
-                        <label class="option-pill">
-                            <input type="checkbox" id="thromboembolism"> Thromboembolism
-                        </label>
-                        <label class="option-pill">
-                            <input type="checkbox" id="diabetes"> Diabetes
-                        </label>
+                                </div>
+                            </div>
+                            <div class="field-block note-card">
+                                <h3>Documentation pointers</h3>
+                                <ul class="data-points">
+                                    <li><span>CHF evidence</span><strong>Systolic or diastolic dysfunction</strong></li>
+                                    <li><span>Vascular disease</span><strong>MI, PAD, or complex plaque</strong></li>
+                                    <li><span>Stroke/TIA</span><strong>Includes embolic events</strong></li>
+                                </ul>
                     </div>
                 </div>
             </section>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate Score">
                     Calculate Score
                 </button>
             </div>
         </form>
+            </section>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">CHA2DS2-VASc Score</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <p class="badge badge--outline mb-2">Guidance</p>
+                    <h3>Scoring overview</h3>
+                    <ul class="info-list">
+                        <li>2 points: Age ≥ 75, prior stroke/TIA.</li>
+                        <li>1 point: CHF, hypertension, diabetes, vascular disease, age 65–74, female sex.</li>
+                        <li>Use final score to guide anticoagulation.</li>
+                    </ul>
+                </div>
+                <div class="sidebar-card">
+                    <h3>Before you submit</h3>
+                    <ol class="steps-list">
+                        <li>Ensure both tabs have been opened and validated.</li>
+                        <li>Tick the confirmation checklist.</li>
+                        <li>Report only the numeric score as required.</li>
+                    </ol>
+                </div>
+            </aside>
+        </div>
+
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">CHA₂DS₂-VASc</p>
+                <h2>Stroke Risk Score</h2>
+                <p class="result-subtitle">Return the score in whole points.</p>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">points</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -136,51 +186,105 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
-            const resultValue = document.getElementById('result-value');
-            const explanationPanel = document.getElementById('result-explanation-panel');
-            const explanationText = document.getElementById('result-explanation');
             const resultContainer = document.getElementById('result-container');
+            const resultValue = document.getElementById('result-value');
+            const resultExplanation = document.getElementById('result-explanation');
+            const resultExplanationPanel = document.getElementById('result-explanation-panel');
 
-            const sexPills = document.querySelectorAll('#sex-pills .sex-pill');
-            sexPills.forEach((pill) => {
-                pill.addEventListener('click', () => {
-                    document.querySelectorAll('#sex-pills .sex-pill').forEach((p) => p.classList.remove('active'));
-                    pill.classList.add('active');
-                    pill.querySelector('input').checked = true;
-                });
-            });
+            const ensureNumber = (id, label) => {
+                const value = parseFloat(document.getElementById(id).value);
+                if (!Number.isFinite(value)) throw new Error(label);
+                return value;
+            };
 
             const collectPayload = () => {
-                const age = parseInt(document.getElementById('age').value, 10);
-                if (!Number.isFinite(age)) throw new Error('Valid age is required.');
-
+                const age = ensureNumber('age', 'Age');
                 const sexRadio = document.querySelector('input[name="sex"]:checked');
-                if (!sexRadio) throw new Error('Select sex.');
+                if (!sexRadio) throw new Error('Sex');
 
                 return {
                     age: [age, 'years'],
                     sex: sexRadio.value === 'male' ? 'Male' : 'Female',
                     chf: document.getElementById('chf').checked,
                     hypertension: document.getElementById('hypertension').checked,
-                    vascular_disease: document.getElementById('vascular-disease').checked,
-                    stroke: document.getElementById('stroke').checked,
-                    tia: document.getElementById('tia').checked,
-                    thromboembolism: document.getElementById('thromboembolism').checked,
                     diabetes: document.getElementById('diabetes').checked,
+                    stroke: document.getElementById('stroke').checked,
+                    vascular_disease: document.getElementById('vascular-disease').checked,
+                    age_75_plus: document.getElementById('age-75').checked,
+                    age_65_74: document.getElementById('age-65').checked,
                 };
             };
 
             const renderResult = (result) => {
                 const value = result.answer ?? result.raw_score ?? result.score;
-                resultValue.textContent = value === null || typeof value === 'undefined' ? '—' : value;
+                resultValue.textContent =
+                    value === null || typeof value === 'undefined' ? '—' : value;
+
                 if (result.explanation) {
-                    explanationText.textContent = result.explanation;
-                    explanationPanel.classList.remove('hidden');
+                    resultExplanation.textContent = result.explanation;
+                    resultExplanationPanel.classList.remove('hidden');
                 } else {
-                    explanationPanel.classList.add('hidden');
+                    resultExplanationPanel.classList.add('hidden');
                 }
+
                 resultContainer.classList.remove('hidden');
             };
+
+            const togglePanelFields = (panel, enable) => {
+                const fields = panel.querySelectorAll('input, select, textarea, button');
+                fields.forEach((field) => {
+                    if (enable) {
+                        if (field.dataset.requiredBackup === 'true') {
+                            field.setAttribute('required', 'required');
+                        }
+                        field.disabled = false;
+                    } else {
+                        if (field.hasAttribute('required')) {
+                            field.dataset.requiredBackup = 'true';
+                        }
+                        field.removeAttribute('required');
+                        field.disabled = true;
+                    }
+                });
+            };
+
+            const initTabs = () => {
+                const buttons = Array.from(document.querySelectorAll('.tab-button'));
+                const panels = Array.from(document.querySelectorAll('.tab-panel'));
+                if (!buttons.length || !panels.length) return;
+
+                const setActive = (targetId) => {
+                    panels.forEach((panel) => {
+                        const isActive = panel.id === targetId;
+                        panel.hidden = !isActive;
+                        panel.classList.toggle('active', isActive);
+                        panel.setAttribute('aria-hidden', String(!isActive));
+                        togglePanelFields(panel, isActive);
+                    });
+
+                    buttons.forEach((button) => {
+                        const isActive = button.dataset.tabTarget === targetId;
+                        button.setAttribute('aria-selected', String(isActive));
+                        button.classList.toggle('active', isActive);
+                    });
+                };
+
+                panels.forEach((panel, index) => {
+                    const isInitiallyActive = index === 0;
+                    if (!isInitiallyActive) {
+                        togglePanelFields(panel, false);
+                        panel.hidden = true;
+                    }
+                });
+
+                buttons.forEach((button) => {
+                    button.addEventListener('click', () => setActive(button.dataset.tabTarget));
+                });
+
+                setActive(buttons[0].dataset.tabTarget);
+            };
+
+            initTabs();
 
             CalculatorPage.init({
                 formId: 'cha2ds2-form',

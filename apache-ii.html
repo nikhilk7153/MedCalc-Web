@@ -7,187 +7,262 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-5xl calculator-card">
-        <header class="mb-8 text-center">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900 mt-2">APACHE II Score</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">APACHE II</span>
+            </div>
+            <h1 class="page-title">ICU Severity Wizard</h1>
+            <p class="page-subtitle">
+                March through the four steps—Profile, Organ support, Vitals, and Labs. Each card keeps existing
+                IDs so the scoring engine remains untouched, but the layout better mirrors an ICU checklist.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Steps</p>
+                    <p class="meta-value">4 panels</p>
+                </div>
+                <div>
+                    <p class="meta-label">Inputs</p>
+                    <p class="meta-value">16 numeric · 4 toggles</p>
+                </div>
+                <div>
+                    <p class="meta-label">Output</p>
+                    <p class="meta-value">APACHE II score</p>
+                </div>
+            </div>
         </header>
 
-        <form id="apache-form" class="space-y-8">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please review the highlighted fields.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="apache-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span id="error-text">Please review the highlighted fields.</span>
+                        </div>
+                    </div>
 
-            <section class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Patient Profile</h2>
-                <div class="grid md:grid-cols-3 gap-6">
-                    <div>
-                        <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
-                        <input type="number" id="age" min="0" step="1" class="form-input" placeholder="e.g., 64" required>
-                    </div>
-                    <div>
-                        <label for="gcs" class="block text-sm font-medium text-gray-700">Glasgow Coma Scale</label>
-                        <input type="number" id="gcs" min="3" max="15" step="1" class="form-input" placeholder="1–15" required>
-                        <p class="helper-text">Use total GCS score (3-15).</p>
-                    </div>
-                    <div>
-                        <label for="fio2" class="block text-sm font-medium text-gray-700">FiO₂ (%)</label>
-                        <input type="number" id="fio2" min="21" max="100" step="1" class="form-input" placeholder="e.g., 40" required>
-                        <p class="helper-text">Threshold of 50% determines PaO₂ vs A-a gradient input.</p>
-                    </div>
-                </div>
+                    <ol class="stepper">
+                        <li class="step-card">
+                            <div class="step-header">
+                                <span class="step-index">1</span>
+                                <div>
+                                    <h3>Patient profile</h3>
+                                    <p class="helper-text">Age, neurologic status, FiO₂, and temperature.</p>
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-3 gap-6 mt-4">
+                                <div>
+                                    <label for="age" class="field-label">Age (years)</label>
+                                    <input type="number" id="age" min="0" step="1" class="form-input" placeholder="e.g., 64" required>
+                                </div>
+                                <div>
+                                    <label for="gcs" class="field-label">Glasgow Coma Scale</label>
+                                    <input type="number" id="gcs" min="3" max="15" step="1" class="form-input" placeholder="1–15" required>
+                                    <p class="helper-text">Use total GCS (3–15).</p>
+                                </div>
+                                <div>
+                                    <label for="fio2" class="field-label">FiO₂ (%)</label>
+                                    <input type="number" id="fio2" min="21" max="100" step="1" class="form-input" placeholder="e.g., 40" required>
+                                    <p class="helper-text">≥ 50% switches to A–a gradient.</p>
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-3 gap-6 mt-4">
+                                <div>
+                                    <label for="temperature" class="field-label">Temperature</label>
+                                    <div class="unit-input-group mt-1">
+                                        <div class="field-combo">
+                                            <input type="number" id="temperature" step="any" class="combo-input" placeholder="e.g., 37.2" required>
+                                        </div>
+                                        <input type="hidden" id="temperature-unit" value="celsius">
+                                        <div class="unit-toggle" role="group" aria-label="Temperature units">
+                                            <button type="button" class="unit-chip is-active" data-temperature-unit="celsius" aria-pressed="true">°C (Celsius)</button>
+                                            <button type="button" class="unit-chip" data-temperature-unit="fahrenheit" aria-pressed="false">°F (Fahrenheit)</button>
+                                        </div>
+                                    </div>
+                                    <p class="helper-text">Toggle between °C/°F — we'll convert the value automatically.</p>
+                                </div>
+                                <div>
+                                    <label for="paO2" class="field-label">PaO₂ (mm Hg)</label>
+                                    <input type="number" id="paO2" step="1" min="0" class="form-input" placeholder="Shown when FiO₂ < 50%">
+                                </div>
+                                <div>
+                                    <label for="aa-gradient" class="field-label">A–a gradient (mm Hg)</label>
+                                    <input type="number" id="aa-gradient" step="1" min="0" class="form-input" placeholder="Shown when FiO₂ ≥ 50%">
+                                </div>
+                            </div>
+                        </li>
 
-                <div class="grid md:grid-cols-3 gap-6">
-                    <div>
-                        <label for="temperature" class="block text-sm font-medium text-gray-700">Temperature</label>
-                        <div class="field-combo mt-1">
-                            <input type="number" id="temperature" step="0.1" class="combo-input" placeholder="e.g., 37.2" required>
-                            <select id="temperature-unit" class="combo-select">
-                                <option value="celsius">°C</option>
-                                <option value="fahrenheit">°F</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="paO2" class="block text-sm font-medium text-gray-700">PaO₂ (mm Hg)</label>
-                        <input type="number" id="paO2" step="1" min="0" class="form-input" placeholder="Shown when FiO₂ < 50%">
-                    </div>
-                    <div>
-                        <label for="aa-gradient" class="block text-sm font-medium text-gray-700">A–a gradient (mm Hg)</label>
-                        <input type="number" id="aa-gradient" step="1" min="0" class="form-input" placeholder="Shown when FiO₂ ≥ 50%">
-                    </div>
-                </div>
+                        <li class="step-card">
+                            <div class="step-header">
+                                <span class="step-index">2</span>
+                                <div>
+                                    <h3>Organ support</h3>
+                                    <p class="helper-text">Flags for chronic organ failure and recent surgery.</p>
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-6 mt-4">
+                                <div>
+                                    <label class="field-label mb-2">Organ failure / immunocompromise</label>
+                                    <div class="radio-toggle">
+                                        <input type="radio" id="ofi-yes" name="ofi" value="true">
+                                        <label for="ofi-yes">Yes</label>
+                                        <input type="radio" id="ofi-no" name="ofi" value="false" checked>
+                                        <label for="ofi-no">No</label>
+                                    </div>
+                                    <div id="surgery-type-wrapper" class="mt-3 hidden">
+                                        <label for="surgery-type" class="field-label">Surgery category</label>
+                                        <select id="surgery-type" class="form-input">
+                                            <option value="Nonoperative">Nonoperative</option>
+                                            <option value="Emergency">Emergency postop</option>
+                                            <option value="Elective">Elective postop</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="field-label mb-2 block">Renal failure status</span>
+                                    <div class="space-y-2">
+                                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                                            <input type="checkbox" id="acute-renal"> Acute renal failure
+                                        </label>
+                                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                                            <input type="checkbox" id="chronic-renal"> Chronic renal failure
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
 
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Organ failure / immunocompromise</label>
-                        <div class="radio-toggle">
-                            <input type="radio" id="ofi-yes" name="ofi" value="true">
-                            <label for="ofi-yes">Yes</label>
-                            <input type="radio" id="ofi-no" name="ofi" value="false" checked>
-                            <label for="ofi-no">No</label>
-                        </div>
-                        <div id="surgery-type-wrapper" class="mt-3 hidden">
-                            <label for="surgery-type" class="block text-sm font-medium text-gray-700">Surgery category</label>
-                            <select id="surgery-type" class="form-input">
-                                <option value="Nonoperative">Nonoperative</option>
-                                <option value="Emergency">Emergency postop</option>
-                                <option value="Elective">Elective postop</option>
-                            </select>
-                        </div>
+                        <li class="step-card">
+                            <div class="step-header">
+                                <span class="step-index">3</span>
+                                <div>
+                                    <h3>Vital signs</h3>
+                                    <p class="helper-text">Capture the worst values from the first 24 hours.</p>
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-6 mt-4">
+                                <div>
+                                    <label for="heart-rate" class="field-label">Heart rate (beats/min)</label>
+                                    <input type="number" id="heart-rate" min="1" class="form-input" placeholder="e.g., 96" required>
+                                </div>
+                                <div>
+                                    <label for="resp-rate" class="field-label">Respiratory rate (breaths/min)</label>
+                                    <input type="number" id="resp-rate" min="1" class="form-input" placeholder="e.g., 18" required>
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-6 mt-4">
+                                <div class="md:col-span-2">
+                                    <label for="ph" class="field-label">Arterial pH</label>
+                                    <input type="number" id="ph" min="6.8" max="7.8" step="any" class="form-input" placeholder="e.g., 7.40" required>
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-6 mt-4">
+                                <div>
+                                    <label for="sbp" class="field-label">Systolic BP (mm Hg)</label>
+                                    <input type="number" id="sbp" min="0" class="form-input" placeholder="e.g., 120" required>
+                                </div>
+                                <div>
+                                    <label for="dbp" class="field-label">Diastolic BP (mm Hg)</label>
+                                    <input type="number" id="dbp" min="0" class="form-input" placeholder="e.g., 70" required>
+                                </div>
+                            </div>
+                        </li>
+
+                        <li class="step-card">
+                            <div class="step-header">
+                                <span class="step-index">4</span>
+                                <div>
+                                    <h3>Laboratory data</h3>
+                                    <p class="helper-text">Use the most abnormal lab values in the first 24 hours.</p>
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-6 mt-4">
+                                <div>
+                                    <label for="sodium" class="field-label">Sodium</label>
+                                    <div class="field-combo mt-1">
+                                        <input type="number" id="sodium" step="any" class="combo-input" placeholder="e.g., 138" required>
+                                        <select id="sodium-unit" class="combo-select">
+                                            <option value="mmol/L">mmol/L</option>
+                                            <option value="mEq/L">mEq/L</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="potassium" class="field-label">Potassium</label>
+                                    <div class="field-combo mt-1">
+                                        <input type="number" id="potassium" step="any" class="combo-input" placeholder="e.g., 4.2" required>
+                                        <select id="potassium-unit" class="combo-select">
+                                            <option value="mmol/L">mmol/L</option>
+                                            <option value="mEq/L">mEq/L</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="creatinine" class="field-label">Creatinine</label>
+                                    <div class="field-combo mt-1">
+                                        <input type="number" id="creatinine" step="any" class="combo-input" placeholder="e.g., 1.2" required>
+                                        <select id="creatinine-unit" class="combo-select">
+                                            <option value="mg/dL">mg/dL</option>
+                                            <option value="µmol/L">µmol/L</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="hematocrit" class="field-label">Hematocrit (%)</label>
+                                    <input type="number" id="hematocrit" min="0" max="100" step="any" class="form-input" placeholder="e.g., 35" required>
+                                </div>
+                                <div>
+                                    <label for="wbc" class="field-label">White blood cells</label>
+                                    <div class="field-combo mt-1">
+                                        <input type="number" id="wbc" step="1" class="combo-input" placeholder="cells per selected volume" required>
+                                        <select id="wbc-unit" class="combo-select">
+                                            <option value="µL">per µL</option>
+                                            <option value="mL">per mL</option>
+                                            <option value="L">per L</option>
+                                        </select>
+                                    </div>
+                                    <p class="helper-text">Enter actual count (e.g., 10000 per µL, not “10”).</p>
+                                </div>
+                            </div>
+                        </li>
+                    </ol>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate APACHE II">
+                            Calculate APACHE II
+                        </button>
                     </div>
-                    <div>
-                        <span class="block text-sm font-medium text-gray-700 mb-2">Renal failure status</span>
-                        <div class="space-y-2">
-                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" id="acute-renal"> Acute renal failure
-                            </label>
-                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" id="chronic-renal"> Chronic renal failure
-                            </label>
-                        </div>
-                    </div>
-                </div>
+                </form>
             </section>
 
-            <section class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Vital Signs</h2>
-                <div class="grid md:grid-cols-3 gap-6">
-                    <div>
-                        <label for="heart-rate" class="block text-sm font-medium text-gray-700">Heart rate (beats/min)</label>
-                        <input type="number" id="heart-rate" min="1" class="form-input" placeholder="e.g., 96" required>
-                    </div>
-                    <div>
-                        <label for="resp-rate" class="block text-sm font-medium text-gray-700">Respiratory rate (breaths/min)</label>
-                        <input type="number" id="resp-rate" min="1" class="form-input" placeholder="e.g., 18" required>
-                    </div>
-                    <div>
-                        <label for="ph" class="block text-sm font-medium text-gray-700">Arterial pH</label>
-                        <input type="number" id="ph" min="6.8" max="7.8" step="0.01" class="form-input" placeholder="e.g., 7.40" required>
-                    </div>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <p class="badge badge--outline mb-2">Guidance</p>
+                    <ul class="info-list">
+                        <li>Use the most deranged values within the first 24 hours.</li>
+                        <li>Switch between PaO₂ and A–a gradient based on FiO₂.</li>
+                        <li>Return only the numeric score in the final answer.</li>
+                    </ul>
                 </div>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="sbp" class="block text-sm font-medium text-gray-700">Systolic BP (mm Hg)</label>
-                        <input type="number" id="sbp" min="0" class="form-input" placeholder="e.g., 120" required>
-                    </div>
-                    <div>
-                        <label for="dbp" class="block text-sm font-medium text-gray-700">Diastolic BP (mm Hg)</label>
-                        <input type="number" id="dbp" min="0" class="form-input" placeholder="e.g., 70" required>
-                    </div>
-                </div>
-            </section>
+            </aside>
+        </div>
 
-            <section class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Laboratory Data</h2>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="sodium" class="block text-sm font-medium text-gray-700">Sodium</label>
-                        <div class="field-combo mt-1">
-                            <input type="number" id="sodium" step="0.1" class="combo-input" placeholder="e.g., 138" required>
-                            <select id="sodium-unit" class="combo-select">
-                                <option value="mmol/L">mmol/L</option>
-                                <option value="mEq/L">mEq/L</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="potassium" class="block text-sm font-medium text-gray-700">Potassium</label>
-                        <div class="field-combo mt-1">
-                            <input type="number" id="potassium" step="0.1" class="combo-input" placeholder="e.g., 4.2" required>
-                            <select id="potassium-unit" class="combo-select">
-                                <option value="mmol/L">mmol/L</option>
-                                <option value="mEq/L">mEq/L</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="creatinine" class="block text-sm font-medium text-gray-700">Creatinine</label>
-                        <div class="field-combo mt-1">
-                            <input type="number" id="creatinine" step="0.1" class="combo-input" placeholder="e.g., 1.2" required>
-                            <select id="creatinine-unit" class="combo-select">
-                                <option value="mg/dL">mg/dL</option>
-                                <option value="µmol/L">µmol/L</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="hematocrit" class="block text-sm font-medium text-gray-700">Hematocrit (%)</label>
-                        <input type="number" id="hematocrit" min="0" max="100" step="0.1" class="form-input" placeholder="e.g., 35" required>
-                    </div>
-                    <div>
-                        <label for="wbc" class="block text-sm font-medium text-gray-700">White blood cells</label>
-                        <div class="field-combo mt-1">
-                            <input type="number" id="wbc" step="1" class="combo-input" placeholder="cells per selected volume" required>
-                            <select id="wbc-unit" class="combo-select">
-                                <option value="µL">per µL</option>
-                                <option value="mL">per mL</option>
-                                <option value="L">per L</option>
-                            </select>
-                        </div>
-                        <p class="helper-text">Enter actual count (e.g., 10000 per µL, not “10”).</p>
-                    </div>
-                </div>
-            </section>
-
-            <div class="pt-4">
-                <button id="calculate-btn" type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition" data-label="Calculate APACHE II">
-                    Calculate APACHE II
-                </button>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">APACHE II</p>
+                <h2>Result</h2>
             </div>
-        </form>
-
-        <section id="result-container" class="hidden mt-10 rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Result</h2>
-            <p id="result-meta" class="text-center text-sm text-gray-500 mt-1">APACHE II score interpretation.</p>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">APACHE II Score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <p id="result-meta" class="result-subtitle">APACHE II score interpretation.</p>
+            <div class="result-value">
+                <span class="result-unit">score</span>
+                <p id="result-value">—</p>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -206,6 +281,59 @@
             const resultValue = document.getElementById('result-value');
             const resultExplanation = document.getElementById('result-explanation');
             const resultExplanationPanel = document.getElementById('result-explanation-panel');
+            const temperatureInput = document.getElementById('temperature');
+            const temperatureUnitInput = document.getElementById('temperature-unit');
+            const temperatureUnitButtons = document.querySelectorAll('[data-temperature-unit]');
+
+            const setupTemperatureUnitToggle = () => {
+                if (!temperatureInput || !temperatureUnitInput || !temperatureUnitButtons.length) return;
+
+                const setActiveButton = (unit) => {
+                    temperatureUnitButtons.forEach((button) => {
+                        const isActive = button.dataset.temperatureUnit === unit;
+                        button.classList.toggle('is-active', isActive);
+                        button.setAttribute('aria-pressed', String(isActive));
+                    });
+                };
+
+                const convertTemperature = (value, fromUnit, toUnit) => {
+                    if (!Number.isFinite(value) || fromUnit === toUnit) return value;
+                    if (fromUnit === 'celsius' && toUnit === 'fahrenheit') {
+                        return (value * 9) / 5 + 32;
+                    }
+                    if (fromUnit === 'fahrenheit' && toUnit === 'celsius') {
+                        return ((value - 32) * 5) / 9;
+                    }
+                    return value;
+                };
+
+                const formatTemperature = (value) => {
+                    if (!Number.isFinite(value)) return '';
+                    const rounded = Math.round(value * 10) / 10;
+                    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+                };
+
+                temperatureUnitButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const nextUnit = button.dataset.temperatureUnit;
+                        const currentUnit = temperatureUnitInput.value || 'celsius';
+                        if (nextUnit === currentUnit) return;
+
+                        const numericValue = parseFloat(temperatureInput.value);
+                        if (Number.isFinite(numericValue)) {
+                            const converted = convertTemperature(numericValue, currentUnit, nextUnit);
+                            temperatureInput.value = formatTemperature(converted);
+                        }
+
+                        temperatureUnitInput.value = nextUnit;
+                        setActiveButton(nextUnit);
+                    });
+                });
+
+                setActiveButton(temperatureUnitInput.value || 'celsius');
+            };
+
+            setupTemperatureUnitToggle();
 
             const toggleOxygenFields = () => {
                 const fio2 = parseFloat(fio2Input.value);

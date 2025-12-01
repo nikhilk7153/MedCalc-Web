@@ -3,110 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anion Gap Calculators</title>
+    <title>Anion Gap Calculator Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="./static/css/calculator.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .formula-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 20px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 1.25rem;
+            box-shadow: 0 8px 20px rgba(245, 87, 108, 0.4);
+            letter-spacing: 0.02em;
+        }
+        
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .input-group:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 14px 16px;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+        }
+        
+        .input-group select {
+            padding: 14px 40px 14px 16px;
+            border: none;
+            border-left: 2px solid #e5e7eb;
+            outline: none;
+            font-weight: 600;
+            color: #374151;
+            background: #f9fafb;
+            cursor: pointer;
+            min-width: 120px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%23374151' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px 20px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            width: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-value {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        
+        .card-container {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .card-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+        
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #667eea;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .field-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .helper-text {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+        
+        select.calculator-select {
+            width: 100%;
+            padding: 14px 40px 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%23374151' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px 20px;
+        }
+        
+        select.calculator-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        .badge {
+            display: inline-flex;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .badge-primary {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+        }
+        
+        .badge-secondary {
+            background: rgba(245, 87, 108, 0.15);
+            color: #f5576c;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%);
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-4xl calculator-card">
-        <header class="mb-8 text-center">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900 mt-2">Anion Gap Suite</h1>
-        </header>
-
-        <form id="anion-form" class="space-y-8">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please review the highlighted fields.</span>
+<body class="p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="glass-card p-8 mb-8">
+            <div class="flex gap-3 mb-4">
+                <span class="badge badge-primary">Medical Calculator</span>
+                <span class="badge badge-secondary">Anion Gap Suite</span>
             </div>
-
-            <section class="space-y-3">
-                <h2 class="text-lg font-semibold text-gray-800">Calculator</h2>
-                <select id="calculator-select" class="form-input">
-                    <option value="anion-gap">Anion Gap</option>
-                    <option value="delta-gap">Delta Gap</option>
-                    <option value="delta-ratio">Delta Ratio</option>
-                    <option value="albumin-corrected-anion-gap">Albumin Corrected Anion Gap</option>
-                    <option value="albumin-corrected-delta-gap">Albumin Corrected Delta Gap</option>
-                    <option value="albumin-corrected-delta-ratio">Albumin Corrected Delta Ratio</option>
-                </select>
-                <p id="calculator-description" class="text-sm text-gray-600">
-                    Standard anion gap using sodium - (chloride + bicarbonate).
-                </p>
-            </section>
-
-            <section class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Electrolytes</h2>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="sodium-value" class="block text-sm font-medium text-gray-700">Sodium</label>
-                        <div class="mt-1 field-combo">
-                            <input type="number" id="sodium-value" step="0.1" required class="combo-input" placeholder="e.g., 138">
-                            <select id="sodium-unit" class="combo-select">
-                                <option value="mmol/L">mmol/L</option>
-                                <option value="mEq/L">mEq/L</option>
-                            </select>
-                        </div>
-                        <p class="helper-text">Input patient's sodium concentration.</p>
+            <h1 class="text-5xl font-black text-gray-900 mb-3">Anion Gap Control Room</h1>
+            <p class="text-xl text-gray-600 max-w-3xl">
+                Select a calculator variant below and enter your electrolyte values. The system automatically routes to the correct calculation endpoint.
+            </p>
                     </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Form -->
+            <div class="lg:col-span-2">
+                <form id="anion-form" class="glass-card p-8 space-y-8">
+                    <!-- Calculator Selector -->
                     <div>
-                        <label for="chloride-value" class="block text-sm font-medium text-gray-700">Chloride</label>
-                        <div class="mt-1 field-combo">
-                            <input type="number" id="chloride-value" step="0.1" required class="combo-input" placeholder="e.g., 102">
-                            <select id="chloride-unit" class="combo-select">
-                                <option value="mmol/L">mmol/L</option>
-                                <option value="mEq/L">mEq/L</option>
-                            </select>
+                        <label class="section-title">Calculator Type</label>
+                        <select id="calculator-select" class="calculator-select">
+                            <option value="anion-gap">Standard Anion Gap</option>
+                            <option value="delta-gap">Delta Gap</option>
+                            <option value="delta-ratio">Delta Ratio</option>
+                            <option value="albumin-corrected-anion-gap">Albumin-Corrected Anion Gap</option>
+                            <option value="albumin-corrected-delta-gap">Albumin-Corrected Delta Gap</option>
+                            <option value="albumin-corrected-delta-ratio">Albumin-Corrected Delta Ratio</option>
+                        </select>
+                        <p id="calculator-description" class="mt-3 text-gray-600 text-sm">
+                            Standard anion gap = Na⁺ - (Cl⁻ + HCO₃⁻)
+                        </p>
+                            </div>
+
+                    <!-- Electrolytes Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Sodium -->
+                        <div class="card-container">
+                            <div class="formula-badge mb-4">SODIUM</div>
+                            <h3 class="field-title">Sodium</h3>
+                            <p class="helper-text">Copy value from the BMP</p>
+                            <div class="input-group">
+                                <input type="number" id="sodium-value" step="any" placeholder="e.g., 138" required>
+                                <select id="sodium-unit">
+                                        <option value="mmol/L">mmol/L</option>
+                                        <option value="mEq/L">mEq/L</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                        <!-- Chloride -->
+                        <div class="card-container">
+                            <div class="formula-badge mb-4">CHLORIDE</div>
+                            <h3 class="field-title">Chloride</h3>
+                            <p class="helper-text">Same lab draw as sodium</p>
+                            <div class="input-group">
+                                <input type="number" id="chloride-value" step="any" placeholder="e.g., 102" required>
+                                <select id="chloride-unit">
+                                        <option value="mmol/L">mmol/L</option>
+                                        <option value="mEq/L">mEq/L</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                        <!-- Bicarbonate -->
+                        <div class="card-container">
+                            <div class="formula-badge mb-4">BICARBONATE</div>
+                            <h3 class="field-title">Bicarbonate</h3>
+                            <p class="helper-text">CO₂ on chemistry panel OK</p>
+                            <div class="input-group">
+                                <input type="number" id="bicarbonate-value" step="any" placeholder="e.g., 20" required>
+                                <select id="bicarbonate-unit">
+                                        <option value="mmol/L">mmol/L</option>
+                                        <option value="mEq/L">mEq/L</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                        <!-- Albumin (Conditional) -->
+                        <div id="albumin-field" class="card-container hidden">
+                            <div class="formula-badge mb-4">ALBUMIN</div>
+                            <h3 class="field-title">Albumin</h3>
+                            <p class="helper-text">Required for correction</p>
+                            <div class="input-group">
+                                <input type="number" id="albumin-value" step="any" placeholder="e.g., 4.0">
+                                <select id="albumin-unit">
+                                        <option value="g/dL">g/dL</option>
+                                        <option value="g/L">g/L</option>
+                                    </select>
+                                </div>
+                            </div>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="error-message" class="hidden">
+                        <div class="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+                            <p class="text-red-800 font-semibold" id="error-text">Please complete all required fields</p>
                         </div>
                     </div>
-                    <div>
-                        <label for="bicarbonate-value" class="block text-sm font-medium text-gray-700">Bicarbonate (HCO₃⁻)</label>
-                        <div class="mt-1 field-combo">
-                            <input type="number" id="bicarbonate-value" step="0.1" required class="combo-input" placeholder="e.g., 20">
-                            <select id="bicarbonate-unit" class="combo-select">
-                                <option value="mmol/L">mmol/L</option>
-                                <option value="mEq/L">mEq/L</option>
-                            </select>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="calculate-btn" class="btn-primary">
+                        Calculate Result
+                    </button>
+                </form>
+
+                <!-- Result Display -->
+                <div id="result-container" class="hidden mt-8">
+                    <div class="result-card">
+                        <div class="mb-4">
+                            <span class="badge" style="background: rgba(255,255,255,0.2); color: white;">Result</span>
                         </div>
+                        <h2 id="result-title" class="text-3xl font-bold mb-2">Anion Gap</h2>
+                        <p id="result-meta" class="text-blue-200 mb-6">Standard calculation complete</p>
+                        <div class="flex items-baseline gap-4">
+                            <div class="result-value" id="result-value">—</div>
+                            <div class="text-xl text-blue-300">mEq/L</div>
+                        </div>
+                        <details id="result-explanation-panel" class="mt-6 hidden">
+                            <summary class="cursor-pointer font-semibold text-lg mb-2">View Explanation</summary>
+                            <pre id="result-explanation" class="text-sm text-blue-100 whitespace-pre-wrap mt-3 bg-black bg-opacity-20 rounded-lg p-4"></pre>
+                        </details>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <section id="albumin-field" class="space-y-4 hidden">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Albumin</h2>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="albumin-value" class="block text-sm font-medium text-gray-700">Albumin</label>
-                        <div class="mt-1 field-combo">
-                            <input type="number" id="albumin-value" step="0.1" min="0" required class="combo-input" placeholder="e.g., 4.0">
-                            <select id="albumin-unit" class="combo-select">
-                                <option value="g/dL">g/dL</option>
-                                <option value="g/L">g/L</option>
-                            </select>
-                        </div>
-                        <p class="helper-text">Shown only for albumin-corrected formulas.</p>
-                    </div>
+            <!-- Sidebar -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Quick Guide -->
+                <div class="glass-card p-6">
+                    <h3 class="font-bold text-xl mb-4 text-gray-900">📊 Quick Guide</h3>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">•</span>
+                            <span>Normal gap ≈ 12 ± 4 mEq/L</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">•</span>
+                            <span>Delta ratio distinguishes high-gap etiologies</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">•</span>
+                            <span>Albumin correction assumes baseline 4 g/dL</span>
+                        </li>
+                    </ul>
                 </div>
-            </section>
 
-            <div class="pt-4">
-                <button id="calculate-btn" type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition" data-label="Run Calculator">
-                    Run Calculator
-                </button>
-            </div>
-        </form>
+                <!-- Data Rules -->
+                <div class="glass-card p-6">
+                    <h3 class="font-bold text-xl mb-4 text-gray-900">⚠️ Data Rules</h3>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-start gap-2">
+                            <span class="text-pink-600 font-bold">•</span>
+                            <span>Use the same lab draw for all values</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-pink-600 font-bold">•</span>
+                            <span>Select units from dropdown—don't convert manually</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-pink-600 font-bold">•</span>
+                            <span>Albumin field appears only when needed</span>
+                        </li>
+                    </ul>
+                </div>
 
-        <section id="result-container" class="hidden mt-10 rounded-2xl border p-6">
-            <h2 id="result-title" class="text-xl font-semibold text-center text-gray-900">Result</h2>
-            <p id="result-meta" class="text-center text-sm text-gray-500 mt-1"></p>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Answer</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+                <!-- Reference Ranges -->
+                <div class="info-box">
+                    <h3 class="font-bold text-lg mb-3 text-gray-900">Reference Ranges</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Sodium:</span>
+                            <span class="font-semibold">135-145 mEq/L</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Chloride:</span>
+                            <span class="font-semibold">96-106 mEq/L</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Bicarbonate:</span>
+                            <span class="font-semibold">22-28 mEq/L</span>
+                        </div>
+                    </div>
+        </div>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
-            </details>
-        </section>
+            </div>
     </div>
 
     <script src="./static/js/calculator-page.js"></script>
@@ -115,32 +395,32 @@
             const CALCULATORS = {
                 'anion-gap': {
                     label: 'Anion Gap',
-                    description: 'Standard anion gap = Na⁺ - (Cl⁻ + HCO₃⁻).',
+                    description: 'Standard anion gap = Sodium - (Chloride + Bicarbonate)',
                     requiresAlbumin: false,
                 },
                 'delta-gap': {
                     label: 'Delta Gap',
-                    description: 'Delta gap = anion gap - 12 to assess unmeasured anions.',
+                    description: 'Delta gap = anion gap - 12 to assess unmeasured anions',
                     requiresAlbumin: false,
                 },
                 'delta-ratio': {
                     label: 'Delta Ratio',
-                    description: 'Delta ratio = delta gap / (24 - HCO₃⁻) to classify metabolic acidosis.',
+                    description: 'Delta ratio = delta gap / (24 - Bicarbonate) to classify metabolic acidosis',
                     requiresAlbumin: false,
                 },
                 'albumin-corrected-anion-gap': {
-                    label: 'Albumin Corrected Anion Gap',
-                    description: 'Correct the anion gap when albumin deviates from 4 g/dL.',
+                    label: 'Albumin-Corrected Anion Gap',
+                    description: 'Corrects the anion gap when albumin deviates from 4 g/dL',
                     requiresAlbumin: true,
                 },
                 'albumin-corrected-delta-gap': {
-                    label: 'Albumin Corrected Delta Gap',
-                    description: 'Albumin-corrected anion gap minus 12.',
+                    label: 'Albumin-Corrected Delta Gap',
+                    description: 'Albumin-corrected anion gap minus 12',
                     requiresAlbumin: true,
                 },
                 'albumin-corrected-delta-ratio': {
-                    label: 'Albumin Corrected Delta Ratio',
-                    description: 'Albumin-corrected delta gap divided by (24 - HCO₃⁻).',
+                    label: 'Albumin-Corrected Delta Ratio',
+                    description: 'Albumin-corrected delta gap divided by (24 - Bicarbonate)',
                     requiresAlbumin: true,
                 },
             };
@@ -227,7 +507,7 @@
                 if (value === null || typeof value === 'undefined') {
                     resultValue.textContent = '—';
                 } else {
-                    resultValue.textContent = typeof value === 'number' ? value : value;
+                    resultValue.textContent = typeof value === 'number' ? value.toFixed(2) : value;
                 }
 
                 if (result.explanation) {
@@ -238,6 +518,7 @@
                 }
 
                 resultContainer.classList.remove('hidden');
+                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             };
 
             CalculatorPage.init({
@@ -254,4 +535,3 @@
     </script>
 </body>
 </html>
-

@@ -6,69 +6,120 @@
     <title>Revised Cardiac Risk Index</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
+    <style>
+        .risk-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .risk-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 1rem;
+            background-color: #fff;
+            display: flex;
+            gap: 0.85rem;
+            align-items: flex-start;
+            box-shadow: 0 15px 30px rgba(15, 23, 42, 0.06);
+        }
+        .risk-card input {
+            margin-top: 0.2rem;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-4xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Revised Cardiac Risk Index</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">RCRI</span>
+            </div>
+            <h1 class="page-title">Pre-operative Cardiac Risk Board</h1>
+            <p class="page-subtitle">
+                Toggle the applicable risk factors and capture the pre-operative creatinine with unit metadata. This layout uses distributed cards instead of a single column.
+            </p>
         </header>
 
-        <form id="cri-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Check the required inputs.</span>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="cri-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span class="badge badge--alert">Check inputs</span>
+                            <p id="error-text">Complete every required field.</p>
+                        </div>
             </div>
 
-            <section class="grid md:grid-cols-2 gap-6">
-                <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4">
+                    <div class="risk-grid">
+                        <label class="risk-card">
                     <input type="checkbox" id="elevated-surgery" class="h-5 w-5 accent-blue-600">
-                    <span class="text-sm font-medium text-gray-800">Elevated-risk surgery</span>
+                            <div>
+                                <p class="font-semibold text-gray-900">Elevated-risk surgery</p>
+                            </div>
                 </label>
-                <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4">
+                        <label class="risk-card">
                     <input type="checkbox" id="ihd" class="h-5 w-5 accent-blue-600">
-                    <span class="text-sm font-medium text-gray-800">History of ischemic heart disease</span>
+                            <div>
+                                <p class="font-semibold text-gray-900">Ischemic heart disease</p>
+                            </div>
                 </label>
-                <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4">
+                        <label class="risk-card">
                     <input type="checkbox" id="chf" class="h-5 w-5 accent-blue-600">
-                    <span class="text-sm font-medium text-gray-800">History of CHF</span>
+                            <div>
+                                <p class="font-semibold text-gray-900">Congestive heart failure</p>
+                            </div>
                 </label>
-                <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4">
+                        <label class="risk-card">
                     <input type="checkbox" id="cerebrovascular" class="h-5 w-5 accent-blue-600">
-                    <span class="text-sm font-medium text-gray-800">History of cerebrovascular disease</span>
+                            <div>
+                                <p class="font-semibold text-gray-900">Cerebrovascular disease</p>
+                            </div>
                 </label>
-                <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4">
+                        <label class="risk-card">
                     <input type="checkbox" id="insulin" class="h-5 w-5 accent-blue-600">
-                    <span class="text-sm font-medium text-gray-800">Pre-operative insulin therapy</span>
+                            <div>
+                                <p class="font-semibold text-gray-900">Pre-operative insulin</p>
+                            </div>
                 </label>
-            </section>
+                    </div>
 
-            <section>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Pre-operative creatinine</label>
+                    <div class="section-grid section-grid--two">
+                        <div class="field-block">
+                            <label class="field-label">Pre-operative creatinine</label>
                 <div class="field-combo">
-                    <input type="number" id="creatinine" min="0" step="0.01" class="combo-input" placeholder="e.g., 1.4" required>
+                    <input type="number" id="creatinine" min="0" step="any" class="combo-input" placeholder="e.g., 1.4" required>
                     <select id="creatinine-unit" class="combo-select">
                         <option value="mg/dL">mg/dL</option>
                         <option value="µmol/L">µmol/L</option>
                     </select>
                 </div>
-            </section>
+                        </div>
+                    </div>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate RCRI">
                     Calculate RCRI
                 </button>
             </div>
         </form>
+            </section>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">RCRI Score</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <aside class="layout-secondary sticky-panel">
+            </aside>
+        </div>
+
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">RCRI</p>
+                <h2>Risk Score</h2>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">points</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>

@@ -7,102 +7,119 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-slate-50 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-4xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">HEART Score</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">HEART</span>
+            </div>
+            <h1 class="page-title">HEART Score Console</h1>
+            <p class="page-subtitle">
+                Work through the five HEART components (History, ECG, Age, Risk factors, Troponin) using the accordion below. This design mimics a control console rather than the standard stacked form.
+            </p>
         </header>
 
-        <form id="heart-form" class="space-y-8">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please review the inputs below.</span>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="heart-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span class="badge badge--alert">Please review the inputs below.</span>
+                        </div>
             </div>
 
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">History impression</label>
-                    <select id="history" class="form-input">
+                    <div class="accordion space-y-4">
+                        <details open>
+                            <summary>H · History</summary>
+                            <select id="history" class="form-input mt-3">
                         <option value="Slightly suspicious">Slightly suspicious</option>
                         <option value="Moderately suspicious">Moderately suspicious</option>
                         <option value="Highly suspicious">Highly suspicious</option>
                     </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Electrocardiogram</label>
-                    <select id="ekg" class="form-input">
+                        </details>
+                        <details>
+                            <summary>E · Electrocardiogram</summary>
+                            <select id="ekg" class="form-input mt-3">
                         <option value="Normal">Normal</option>
                         <option value="Non-specific repolarization disturbance">Non-specific repolarization disturbance</option>
                         <option value="Significant ST deviation">Significant ST deviation</option>
                     </select>
+                        </details>
+                        <details>
+                            <summary>A · Age</summary>
+                            <div class="mt-3">
+                                <label class="field-label" for="age">Age (years)</label>
+                                <input type="number" id="age" min="18" max="120" step="1" class="form-input mt-2" placeholder="e.g., 50" required>
                 </div>
-            </section>
-
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Age (years)</label>
-                    <input type="number" id="age" min="18" max="120" step="1" class="form-input" placeholder="e.g., 58" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Initial troponin</label>
-                    <select id="troponin" class="form-input">
-                        <option value="less than or equal to normal limit">≤ normal limit</option>
-                        <option value="between the normal limit or up to three times the normal limit">1-3× normal limit</option>
-                        <option value="greater than three times normal limit">>3× normal limit</option>
-                    </select>
-                </div>
-            </section>
-
-            <section>
-                <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Risk factors</h2>
-                <div class="grid md:grid-cols-2 gap-4">
-                    <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4 bg-white">
-                        <input type="checkbox" id="hypertension" class="h-5 w-5 accent-indigo-600">
+                        </details>
+                        <details>
+                            <summary>R · Risk factors</summary>
+                            <div class="grid md:grid-cols-2 gap-4 mt-3">
+                                <label class="option-pill">
+                                    <input type="checkbox" id="hypertension">
                         <span>Hypertension</span>
                     </label>
-                    <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4 bg-white">
-                        <input type="checkbox" id="hypercholesterolemia" class="h-5 w-5 accent-indigo-600">
+                                <label class="option-pill">
+                                    <input type="checkbox" id="hypercholesterolemia">
                         <span>Hypercholesterolemia</span>
                     </label>
-                    <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4 bg-white">
-                        <input type="checkbox" id="diabetes" class="h-5 w-5 accent-indigo-600">
+                                <label class="option-pill">
+                                    <input type="checkbox" id="diabetes">
                         <span>Diabetes mellitus</span>
                     </label>
-                    <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4 bg-white">
-                        <input type="checkbox" id="obesity" class="h-5 w-5 accent-indigo-600">
-                        <span>Obesity (BMI &gt;30)</span>
+                                <label class="option-pill">
+                                    <input type="checkbox" id="obesity">
+                                    <span>Obesity (BMI &gt; 30)</span>
                     </label>
-                    <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4 bg-white">
-                        <input type="checkbox" id="smoking" class="h-5 w-5 accent-indigo-600">
+                                <label class="option-pill">
+                                    <input type="checkbox" id="smoking">
                         <span>Smoking (current/recent)</span>
                     </label>
-                    <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4 bg-white">
-                        <input type="checkbox" id="family-cvd" class="h-5 w-5 accent-indigo-600">
-                        <span>Family history of CVD &lt;65y</span>
+                                <label class="option-pill">
+                                    <input type="checkbox" id="family-cvd">
+                                    <span>Family history of CVD &lt; 65y</span>
                     </label>
-                    <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4 bg-white">
-                        <input type="checkbox" id="atherosclerosis" class="h-5 w-5 accent-indigo-600">
+                                <label class="option-pill">
+                                    <input type="checkbox" id="atherosclerosis">
                         <span>Atherosclerotic disease</span>
                     </label>
                 </div>
-            </section>
+                        </details>
+                        <details>
+                            <summary>T · Troponin</summary>
+                            <select id="troponin" class="form-input mt-3">
+                                <option value="less than or equal to normal limit">≤ normal limit</option>
+                                <option value="between the normal limit or up to three times the normal limit">1–3× normal limit</option>
+                                <option value="greater than three times normal limit">&gt;3× normal limit</option>
+                            </select>
+                        </details>
+                    </div>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate HEART Score">
                     Calculate HEART Score
                 </button>
             </div>
         </form>
+            </section>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">HEART Score</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <aside class="layout-secondary sticky-panel">
+            </aside>
+        </div>
+
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">HEART</p>
+                <h2>Score</h2>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">points</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>

@@ -6,82 +6,179 @@
     <title>Child-Pugh Score</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
+    <style>
+        .accordion details {
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
+            background: #fff;
+            box-shadow: 0 15px 30px rgba(15, 23, 42, 0.06);
+        }
+        .accordion summary {
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .score-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            color: #312e81;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-4xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Child-Pugh Score</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">Child-Pugh</span>
+            </div>
+            <h1 class="page-title">Child-Pugh Cirrhosis Worksheet</h1>
+            <p class="page-subtitle">
+                Capture laboratory values and clinical findings, then review the accordion checklist to ensure every criterion was considered.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Inputs</p>
+                    <p class="meta-value">Bilirubin · Albumin · INR · Ascites · Encephalopathy</p>
+                </div>
+                <div>
+                    <p class="meta-label">Output</p>
+                    <p class="meta-value">Child-Pugh class</p>
+                </div>
+                <div>
+                    <p class="meta-label">Extras</p>
+                    <p class="meta-value">Context + confirmation</p>
+                </div>
+            </div>
         </header>
 
-        <form id="child-pugh-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please check the fields below.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="child-pugh-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span class="badge badge--alert">Action needed</span>
+                            <p id="error-text">Please check the fields below.</p>
+                        </div>
+                    </div>
 
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label for="inr" class="block text-sm font-medium text-gray-700">INR</label>
-                    <input type="number" id="inr" min="0" step="0.01" class="form-input" placeholder="e.g., 1.5" required>
-                </div>
-                <div>
-                    <label for="ascites" class="block text-sm font-medium text-gray-700">Ascites</label>
-                    <select id="ascites" class="form-input">
-                        <option value="absent">Absent</option>
-                        <option value="slight">Slight</option>
-                        <option value="moderate">Moderate</option>
-                    </select>
-                </div>
-            </section>
-
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label for="bilirubin-value" class="block text-sm font-medium text-gray-700">Total bilirubin</label>
+                    <div class="section-grid section-grid--two">
+                        <div class="field-block">
+                            <label for="bilirubin-value" class="field-label">Total bilirubin</label>
                     <div class="field-combo">
-                        <input type="number" id="bilirubin-value" step="0.1" min="0" class="combo-input" placeholder="e.g., 1.8" required>
+                        <input type="number" id="bilirubin-value" step="any" min="0" class="combo-input" placeholder="e.g., 1.8" required>
                         <select id="bilirubin-unit" class="combo-select">
                             <option value="mg/dL">mg/dL</option>
                             <option value="µmol/L">µmol/L</option>
                         </select>
                     </div>
                 </div>
-                <div>
-                    <label for="albumin-value" class="block text-sm font-medium text-gray-700">Albumin</label>
+                        <div class="field-block">
+                            <label for="albumin-value" class="field-label">Albumin</label>
                     <div class="field-combo">
-                        <input type="number" id="albumin-value" step="0.1" min="0" class="combo-input" placeholder="e.g., 3.2" required>
+                        <input type="number" id="albumin-value" step="any" min="0" class="combo-input" placeholder="e.g., 3.2" required>
                         <select id="albumin-unit" class="combo-select">
                             <option value="g/dL">g/dL</option>
                             <option value="g/L">g/L</option>
                         </select>
                     </div>
                 </div>
-            </section>
+                    </div>
 
-            <section>
-                <label for="encephalopathy" class="block text-sm font-medium text-gray-700">Encephalopathy grade</label>
-                <select id="encephalopathy" class="form-input">
-                    <option value="No Encephalopathy">No encephalopathy</option>
-                    <option value="Grade 1-2">Grade 1-2</option>
-                    <option value="Grade 3-4">Grade 3-4</option>
-                </select>
-            </section>
+                    <div class="field-block">
+                        <label for="inr" class="field-label">INR</label>
+                        <input type="number" id="inr" min="0" step="any" class="form-input" placeholder="e.g., 1.5" required>
+                    </div>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    <div class="accordion space-y-4">
+                        <details open>
+                            <summary>Ascites assessment <span class="score-pill">Clinical</span></summary>
+                            <div class="radio-toggle mt-3">
+                                <input type="radio" id="ascites-absent" name="ascites" value="absent" required checked>
+                                <label for="ascites-absent">Absent</label>
+                                <input type="radio" id="ascites-slight" name="ascites" value="slight">
+                                <label for="ascites-slight">Slight (diuretic responsive)</label>
+                                <input type="radio" id="ascites-moderate" name="ascites" value="moderate">
+                                <label for="ascites-moderate">Moderate/Large</label>
+                            </div>
+                        </details>
+                        <details>
+                            <summary>Encephalopathy grade <span class="score-pill">Neurologic</span></summary>
+                            <div class="radio-toggle mt-3">
+                                <input type="radio" id="enceph-none" name="encephalopathy" value="No Encephalopathy" required checked>
+                                <label for="enceph-none">None</label>
+                                <input type="radio" id="enceph-12" name="encephalopathy" value="Grade 1-2">
+                                <label for="enceph-12">Grade 1–2</label>
+                                <input type="radio" id="enceph-34" name="encephalopathy" value="Grade 3-4">
+                                <label for="enceph-34">Grade 3–4</label>
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate Score">
                     Calculate Score
                 </button>
             </div>
         </form>
+            </section>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Child-Pugh Score</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <p class="badge badge--outline mb-2">Guidance</p>
+                    <h3>Scoring reminders</h3>
+                    <ul class="info-list">
+                        <li>Bilirubin and albumin accept mg/dL or µmol/L / g/L.</li>
+                        <li>Ascites grading should match the note verbatim.</li>
+                        <li>Neurologic status is prior to lactulose or other therapy.</li>
+                    </ul>
+                </div>
+                <div class="sidebar-card">
+                    <h3>Child-Pugh classes</h3>
+                    <dl class="reference-list">
+                        <div>
+                            <dt>Class A</dt>
+                            <dd>5–6 points</dd>
+                        </div>
+                        <div>
+                            <dt>Class B</dt>
+                            <dd>7–9 points</dd>
+                        </div>
+                        <div>
+                            <dt>Class C</dt>
+                            <dd>10–15 points</dd>
+                        </div>
+                    </dl>
+                </div>
+                <div class="sidebar-card">
+                    <h3>Before you submit</h3>
+                    <ol class="steps-list">
+                        <li>Ensure accordion sections are reviewed.</li>
+                        <li>Confirm the checklist at the bottom of the form.</li>
+                        <li>Return only the numeric score or class per prompt.</li>
+                    </ol>
+                </div>
+            </aside>
+        </div>
+
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">Child-Pugh</p>
+                <h2>Score &amp; Class</h2>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">points</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -99,13 +196,18 @@
                 if (!Number.isFinite(bilirubin)) throw new Error('Enter total bilirubin.');
                 if (!Number.isFinite(albumin)) throw new Error('Enter albumin.');
 
-                return {
+                const payload = {
                     inr,
                     bilirubin: [bilirubin, document.getElementById('bilirubin-unit').value],
                     albumin: [albumin, document.getElementById('albumin-unit').value],
-                    ascites: document.getElementById('ascites').value,
-                    encephalopathy: document.getElementById('encephalopathy').value,
+                    ascites: document.querySelector('input[name="ascites"]:checked')?.value,
+                    encephalopathy: document.querySelector('input[name="encephalopathy"]:checked')?.value,
                 };
+
+                if (!payload.ascites) throw new Error('Select ascites severity.');
+                if (!payload.encephalopathy) throw new Error('Select encephalopathy grade.');
+
+                return payload;
             };
 
             const renderResult = (result) => {

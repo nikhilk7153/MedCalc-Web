@@ -7,58 +7,99 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">HOMA-IR</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-5xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">HOMA-IR</span>
+            </div>
+            <h1 class="page-title">HOMA-IR Analyzer</h1>
+            <p class="page-subtitle">
+                Dual-column insulin resistance assessment using fasting glucose and insulin.
+            </p>
+            <div class="hero-metadata">
+                <div><p class="meta-label">Inputs</p><p class="meta-value">Glucose + Insulin</p></div>
+                <div><p class="meta-label">Units</p><p class="meta-value">mg/dL · mmol/L · µIU/mL · pmol/L</p></div>
+                <div><p class="meta-label">Output</p><p class="meta-value">HOMA-IR index</p></div>
+            </div>
         </header>
 
-        <form id="homa-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Enter fasting glucose and insulin.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="homa-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span id="error-text">Enter fasting glucose and insulin.</span>
+                        </div>
+                    </div>
 
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label for="glucose" class="block text-sm font-medium text-gray-700">Fasting glucose</label>
-                    <div class="field-combo">
-                        <input type="number" id="glucose" min="0" step="0.1" class="combo-input" placeholder="e.g., 110" required>
-                        <select id="glucose-unit" class="combo-select">
-                            <option value="mg/dL">mg/dL</option>
-                            <option value="mmol/L">mmol/L</option>
-                        </select>
+                    <div class="callout callout-info">
+                        <p>Enter both labs exactly as they appear in the chart. Use unit selectors to match the report—never convert manually.</p>
                     </div>
-                </div>
-                <div>
-                    <label for="insulin" class="block text-sm font-medium text-gray-700">Fasting insulin</label>
-                    <div class="field-combo">
-                        <input type="number" id="insulin" min="0" step="0.1" class="combo-input" placeholder="e.g., 14" required>
-                        <select id="insulin-unit" class="combo-select">
-                            <option value="µIU/mL">µIU/mL</option>
-                            <option value="pmol/L">pmol/L</option>
-                            <option value="ng/mL">ng/mL</option>
-                        </select>
+
+                    <div class="section-grid section-grid--two">
+                        <article class="note-card">
+                            <h3 class="field-label">Fasting glucose</h3>
+                            <p class="helper-text mb-2">Use the true fasting value (8+ hours).</p>
+                            <div class="field-combo">
+                                <input type="number" id="glucose" min="0" step="any" class="combo-input" placeholder="e.g., 110" required>
+                                <select id="glucose-unit" class="combo-select">
+                                    <option value="mg/dL">mg/dL</option>
+                                    <option value="mmol/L">mmol/L</option>
+                                </select>
+                            </div>
+                        </article>
+                        <article class="note-card">
+                            <h3 class="field-label">Fasting insulin</h3>
+                            <p class="helper-text mb-2">Collected at the same time as glucose.</p>
+                            <div class="field-combo">
+                                <input type="number" id="insulin" min="0" step="any" class="combo-input" placeholder="e.g., 14" required>
+                                <select id="insulin-unit" class="combo-select">
+                                    <option value="µIU/mL">µIU/mL</option>
+                                    <option value="pmol/L">pmol/L</option>
+                                    <option value="ng/mL">ng/mL</option>
+                                </select>
+                            </div>
+                        </article>
                     </div>
-                </div>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate HOMA-IR">
+                            Calculate HOMA-IR
+                        </button>
+                    </div>
+                </form>
             </section>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
-                    Calculate HOMA-IR
-                </button>
-            </div>
-        </form>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <h3>Formula</h3>
+                    <p class="helper-text">HOMA-IR = (glucose × insulin) / 405 when using mg/dL and µIU/mL.</p>
+                </div>
+                <div class="sidebar-card">
+                    <h3>Best practices</h3>
+                    <ul class="info-list">
+                        <li>Both values from the same draw.</li>
+                        <li>Patient fasted ≥ 8 hours.</li>
+                        <li>Confirm units match the lab report.</li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">HOMA-IR Result</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">HOMA-IR</p>
+                <h2>Index</h2>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">Score</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -108,4 +149,3 @@
     </script>
 </body>
 </html>
-

@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+
+# Benchmark outputs
+benchmark_results_*.json
+benchmark_chunk_*.log
+benchmark_screenshots/
+test_data_chunk_*.csv
+test_data_sampled_3_per_calc.csv
+agent_results/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Browser
+chromium_download/
+playwright-chromium/
+

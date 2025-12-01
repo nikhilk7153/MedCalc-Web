@@ -7,73 +7,132 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Free Water Deficit</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-5xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">Free water deficit</span>
+            </div>
+            <h1 class="page-title">Hypernatremia Hydration Board</h1>
+            <p class="page-subtitle">
+                Capture age, sex, weight, and sodium. The hydration board below mirrors the classic TBW ×
+                (1 - 140/Na) calculation.
+            </p>
+            <div class="hero-metadata">
+                <div><p class="meta-label">Inputs</p><p class="meta-value">Age · Sex · Weight · Na⁺</p></div>
+                <div><p class="meta-label">Output</p><p class="meta-value">Liters to replace</p></div>
+                <div><p class="meta-label">Assumption</p><p class="meta-value">Steady-state hypernatremia</p></div>
+            </div>
         </header>
 
-        <form id="fwd-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please enter age, sex, weight, and serum sodium.</span>
-            </div>
-
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
-                    <input type="number" id="age" min="0" max="120" step="1" class="form-input" placeholder="e.g., 62" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Sex</label>
-                    <div class="radio-toggle" id="sex-group">
-                        <input type="radio" name="sex" id="sex-male" value="Male" checked>
-                        <label for="sex-male">Male</label>
-                        <input type="radio" name="sex" id="sex-female" value="Female">
-                        <label for="sex-female">Female</label>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="fwd-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span id="error-text">Please enter age, sex, weight, and serum sodium.</span>
+                        </div>
                     </div>
-                </div>
+
+                    <section class="note-card">
+                        <h3 class="field-label mb-3">Patient profile</h3>
+                        <div class="section-grid section-grid--two">
+                            <div>
+                                <label class="field-label" for="age">Age (years)</label>
+                                <input type="number" id="age" min="0" max="120" step="1" class="form-input mt-2" placeholder="e.g., 62" required>
+                            </div>
+                            <div>
+                                <label class="field-label mb-2">Sex</label>
+                                <div class="radio-toggle" id="sex-group">
+                                    <input type="radio" name="sex" id="sex-male" value="Male" checked>
+                                    <label for="sex-male">Male</label>
+                                    <input type="radio" name="sex" id="sex-female" value="Female">
+                                    <label for="sex-female">Female</label>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="section-grid section-grid--two">
+                        <article class="lab-card">
+                            <div class="lab-card__heading">
+                                <span class="lab-chip">Lane 1</span>
+                                <h3>Weight</h3>
+                            </div>
+                            <p class="lab-card__helper">Use the same units the note provides.</p>
+                            <div class="lab-card__controls">
+                                <div class="lab-combo">
+                                    <input type="number" id="weight" min="1" step="any" class="lab-combo__input" placeholder="e.g., 70" required>
+                                    <select id="weight-unit" class="lab-combo__select">
+                                        <option value="kg">kg</option>
+                                        <option value="lbs">lbs</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </article>
+                        <article class="lab-card">
+                            <div class="lab-card__heading">
+                                <span class="lab-chip">Lane 2</span>
+                                <h3>Serum sodium</h3>
+                            </div>
+                            <p class="lab-card__helper">Hypernatremic range 100–200 mEq/L.</p>
+                            <div class="lab-card__controls">
+                                <div class="lab-combo">
+                                    <input type="number" id="sodium" min="100" max="200" step="any" class="lab-combo__input" placeholder="e.g., 150" required>
+                                    <select id="sodium-unit" class="lab-combo__select">
+                                        <option value="mEq/L">mEq/L</option>
+                                        <option value="mmol/L">mmol/L</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+
+                    <section class="callout callout-info">
+                        <p>Total body water (TBW) is estimated from sex and age; the calculator derives this automatically.</p>
+                    </section>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate Deficit">
+                            Calculate Deficit
+                        </button>
+                    </div>
+                </form>
             </section>
 
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label for="weight" class="block text-sm font-medium text-gray-700">Weight</label>
-                    <div class="field-combo">
-                        <input type="number" id="weight" min="1" step="0.1" class="combo-input" placeholder="e.g., 70" required>
-                        <select id="weight-unit" class="combo-select">
-                            <option value="kg">kg</option>
-                            <option value="lbs">lbs</option>
-                        </select>
-                    </div>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <p class="badge badge--outline mb-2">Formula</p>
+                    <ul class="info-list">
+                        <li>Deficit = TBW × (1 - 140 / Na)</li>
+                        <li>TBW ≈ weight × 0.6 (men) or 0.5 (women)</li>
+                        <li>Adjust coefficient to 0.45 for elderly women</li>
+                    </ul>
                 </div>
-                <div>
-                    <label for="sodium" class="block text-sm font-medium text-gray-700">Serum sodium</label>
-                    <div class="field-combo">
-                        <input type="number" id="sodium" min="100" max="200" step="0.1" class="combo-input" placeholder="e.g., 150" required>
-                        <select id="sodium-unit" class="combo-select">
-                            <option value="mEq/L">mEq/L</option>
-                            <option value="mmol/L">mmol/L</option>
-                        </select>
-                    </div>
+                <div class="sidebar-card">
+                    <h3>Tips</h3>
+                    <ul class="info-list">
+                        <li>Use actual weight, not ideal body weight.</li>
+                        <li>Only enter sodium from the same draw as weight.</li>
+                        <li>Replace deficit slowly unless otherwise directed.</li>
+                    </ul>
                 </div>
-            </section>
+            </aside>
+        </div>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
-                    Calculate Deficit
-                </button>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">Free water</p>
+                <h2>Estimated deficit</h2>
             </div>
-        </form>
-
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Estimated Deficit</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Liters</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <div class="result-value">
+                <span class="result-unit">Liters</span>
+                <p id="result-value">—</p>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>

@@ -7,21 +7,38 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-4xl calculator-card">
-        <header class="mb-8 text-center">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900 mt-2">Pneumonia Severity Index (PSI)</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">PSI</span>
+            </div>
+            <h1 class="page-title">PSI Assessment Console</h1>
+            <p class="page-subtitle">
+                Expand each accordion to capture demographics, comorbidities, vitals, and labs. The summary
+                column keeps a running tally so you can verify inputs before submitting.
+            </p>
+            <div class="hero-metadata">
+                <div><p class="meta-label">Panels</p><p class="meta-value">4 accordion steps</p></div>
+                <div><p class="meta-label">Inputs</p><p class="meta-value">20 fields</p></div>
+                <div><p class="meta-label">Output</p><p class="meta-value">PSI score + risk class</p></div>
+            </div>
         </header>
 
-        <form id="psi-form" class="space-y-8">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please review the highlighted fields.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="psi-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span id="error-text">Please review the highlighted fields.</span>
+                        </div>
+                    </div>
 
-            <section class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Demographics</h2>
-                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="accordion space-y-4">
+                        <details open>
+                            <summary>Demographics</summary>
+                            <div class="grid md:grid-cols-3 gap-6 mt-4">
                     <div>
                         <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
                         <input type="number" id="age" min="0" step="1" required class="form-input" placeholder="e.g., 65">
@@ -44,12 +61,12 @@
                             <label for="nhr-no">No</label>
                         </div>
                     </div>
-                </div>
-            </section>
+                            </div>
+                        </details>
 
-            <section class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Comorbidities</h2>
-                <div class="grid md:grid-cols-2 gap-4">
+                        <details>
+                            <summary>Comorbidities</summary>
+                            <div class="grid md:grid-cols-2 gap-4 mt-4">
                     <div class="flex items-center justify-between">
                         <span class="text-sm text-gray-700">Neoplastic disease</span>
                         <div class="radio-toggle w-36">
@@ -95,12 +112,12 @@
                             <label for="renal-no">No</label>
                         </div>
                     </div>
-                </div>
-            </section>
+                            </div>
+                        </details>
 
-            <section class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Clinical findings</h2>
-                <div class="grid md:grid-cols-2 gap-6">
+                        <details>
+                            <summary>Clinical findings</summary>
+                            <div class="grid md:grid-cols-2 gap-6 mt-4">
                     <div>
                         <label for="heart-rate" class="block text-sm font-medium text-gray-700">Heart Rate or Pulse (beats/min)</label>
                         <input type="number" id="heart-rate" min="0" step="1" required class="form-input" placeholder="e.g., 110">
@@ -116,7 +133,7 @@
                     <div>
                         <label for="temperature" class="block text-sm font-medium text-gray-700">Temperature</label>
                         <div class="mt-1 field-combo">
-                            <input type="number" id="temperature" step="0.1" required class="combo-input" placeholder="e.g., 38.1">
+                            <input type="number" id="temperature" step="any" required class="combo-input" placeholder="e.g., 38.1">
                             <select id="temperature-unit" class="combo-select">
                                 <option value="celsius">°C</option>
                                 <option value="fahrenheit">°F</option>
@@ -125,7 +142,7 @@
                     </div>
                     <div>
                         <label for="ph" class="block text-sm font-medium text-gray-700">Arterial pH</label>
-                        <input type="number" id="ph" step="0.01" min="6.5" max="8.0" required class="form-input" placeholder="e.g., 7.40">
+                        <input type="number" id="ph" step="any" min="6.5" max="8.0" required class="form-input" placeholder="e.g., 7.40">
                     </div>
                     <div>
                         <span class="block text-sm font-medium text-gray-700 mb-2">Altered mental status</span>
@@ -136,16 +153,16 @@
                             <label for="ams-no">No</label>
                         </div>
                     </div>
-                </div>
-            </section>
+                            </div>
+                        </details>
 
-            <section class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Laboratory & Imaging</h2>
-                <div class="grid md:grid-cols-2 gap-6">
+                        <details>
+                            <summary>Laboratory & Imaging</summary>
+                            <div class="grid md:grid-cols-2 gap-6 mt-4">
                     <div>
                         <label for="bun" class="block text-sm font-medium text-gray-700">Blood Urea Nitrogen (BUN)</label>
                         <div class="mt-1 field-combo">
-                            <input type="number" id="bun" step="0.1" min="0" required class="combo-input" placeholder="e.g., 25">
+                            <input type="number" id="bun" step="any" min="0" required class="combo-input" placeholder="e.g., 25">
                             <select id="bun-unit" class="combo-select">
                                 <option value="mg/dL">mg/dL</option>
                                 <option value="mmol/L">mmol/L</option>
@@ -155,7 +172,7 @@
                     <div>
                         <label for="sodium" class="block text-sm font-medium text-gray-700">Sodium</label>
                         <div class="mt-1 field-combo">
-                            <input type="number" id="sodium" step="0.1" min="0" required class="combo-input" placeholder="e.g., 138">
+                            <input type="number" id="sodium" step="any" min="0" required class="combo-input" placeholder="e.g., 138">
                             <select id="sodium-unit" class="combo-select">
                                 <option value="mmol/L">mmol/L</option>
                                 <option value="mEq/L">mEq/L</option>
@@ -165,7 +182,7 @@
                     <div>
                         <label for="glucose" class="block text-sm font-medium text-gray-700">Glucose</label>
                         <div class="mt-1 field-combo">
-                            <input type="number" id="glucose" step="0.1" min="0" required class="combo-input" placeholder="e.g., 120">
+                            <input type="number" id="glucose" step="any" min="0" required class="combo-input" placeholder="e.g., 120">
                             <select id="glucose-unit" class="combo-select">
                                 <option value="mg/dL">mg/dL</option>
                                 <option value="mmol/L">mmol/L</option>
@@ -174,12 +191,12 @@
                     </div>
                     <div>
                         <label for="hematocrit" class="block text-sm font-medium text-gray-700">Hematocrit (%)</label>
-                        <input type="number" id="hematocrit" min="0" max="100" step="0.1" required class="form-input" placeholder="e.g., 36">
+                        <input type="number" id="hematocrit" min="0" max="100" step="any" required class="form-input" placeholder="e.g., 36">
                     </div>
                     <div>
                         <label for="pao2" class="block text-sm font-medium text-gray-700">Partial pressure of oxygen</label>
                         <div class="mt-1 field-combo">
-                            <input type="number" id="pao2" step="0.1" min="0" required class="combo-input" placeholder="e.g., 70">
+                            <input type="number" id="pao2" step="any" min="0" required class="combo-input" placeholder="e.g., 70">
                             <select id="pao2-unit" class="combo-select">
                                 <option value="mm Hg">mm Hg</option>
                                 <option value="kPa">kPa</option>
@@ -195,36 +212,49 @@
                             <label for="pe-no">No</label>
                         </div>
                     </div>
-                </div>
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate with PSI Engine">
+                            Calculate with PSI Engine
+                        </button>
+                    </div>
+                </form>
             </section>
 
-            <div class="pt-4">
-                <button id="calculate-btn" type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition" data-label="Calculate with PSI Engine">
-                    Calculate with PSI Engine
-                </button>
-            </div>
-        </form>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <h3>Tips</h3>
+                    <ul class="info-list">
+                        <li>Only use values documented in the same encounter.</li>
+                        <li>Keep temperature units consistent with the note.</li>
+                        <li>Return the numeric score, class, and recommendation.</li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
 
-        <section id="result-container" class="hidden mt-10 rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Result</h2>
-            <p id="result-meta" class="text-center text-sm text-gray-500 mt-1"></p>
-            <div class="mt-6 grid md:grid-cols-3 gap-6 text-center">
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">PSI</p>
+                <h2>Result</h2>
+            </div>
+            <p id="result-meta" class="result-subtitle"></p>
+            <div class="result-grid">
                 <div>
-                    <p class="text-sm text-gray-500">PSI Score</p>
-                    <p id="result-score" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+                    <p class="result-label">PSI Score</p>
+                    <p id="result-score" class="result-value">—</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500">Risk Class</p>
-                    <p id="result-class" class="text-3xl font-bold mt-1">—</p>
+                    <p class="result-label">Risk Class</p>
+                    <p id="result-class" class="result-value">—</p>
+                </div>
             </div>
-                <div>
-                    <p class="text-sm text-gray-500">Recommendation</p>
-                    <p id="result-recommendation" class="text-lg font-semibold mt-1 text-gray-900">—</p>
-            </div>
-            </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View step-by-step explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View step-by-step explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -239,7 +269,6 @@
             const resultContainer = document.getElementById('result-container');
             const resultScore = document.getElementById('result-score');
             const resultClass = document.getElementById('result-class');
-            const resultRecommendation = document.getElementById('result-recommendation');
             const resultMeta = document.getElementById('result-meta');
             const resultExplanationPanel = document.getElementById('result-explanation-panel');
             const resultExplanation = document.getElementById('result-explanation');
@@ -331,7 +360,6 @@
                 resultContainer.className = `mt-10 rounded-2xl border p-6 ${theme}`;
                 resultScore.textContent = result.score === null || typeof result.score === 'undefined' ? 'N/A' : result.score;
                 resultClass.textContent = result.risk_class || '—';
-                resultRecommendation.textContent = result.recommendation || '—';
                 resultMeta.textContent = result.is_class_i
                     ? 'Meets PORT Risk Class I criteria.'
                     : 'Risk class computed from PSI score.';

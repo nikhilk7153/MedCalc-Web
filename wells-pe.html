@@ -3,104 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wells Criteria (PE)</title>
+    <title>Wells Criteria (Pulmonary Embolism)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
-    <style>
-        .cards-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .criterion-card {
-            border: 1px solid #e5e7eb;
-            border-radius: 1rem;
-            padding: 1rem;
-            background: #f9fafb;
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-        }
-        .criterion-card input {
-            width: 20px;
-            height: 20px;
-            accent-color: #2563eb;
-        }
-        .criterion-card label {
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: #1f2937;
-            cursor: pointer;
-        }
-    </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-5xl space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Wells Criteria for Pulmonary Embolism</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">Wells (PE)</span>
+            </div>
+            <h1 class="page-title">Pulmonary Embolism Risk Worksheet</h1>
+            <p class="page-subtitle">
+                Assess pulmonary embolism probability using clinical criteria and patient presentation.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Criteria</p>
+                    <p class="meta-value">8 binary + HR</p>
+                </div>
+                <div>
+                    <p class="meta-label">Output</p>
+                    <p class="meta-value">Wells score (points)</p>
+                </div>
+            </div>
         </header>
 
-        <form id="wells-pe-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please review the selections below.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="wells-pe-form" class="tabbed-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span class="badge badge--alert">Action needed</span>
+                            <p id="error-text">Please review the highlighted inputs.</p>
+                        </div>
+                    </div>
 
-            <section class="cards-grid">
-                <div class="criterion-card">
-                    <input type="checkbox" id="previous-pe">
-                    <label for="previous-pe">Prior pulmonary embolism</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="immobilization">
-                    <label for="immobilization">Immobilization ≥3 days</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="malignancy">
-                    <label for="malignancy">Recent malignancy treatment</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="pe-number-one">
-                    <label for="pe-number-one">PE most likely diagnosis</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="surgery-recent">
-                    <label for="surgery-recent">Surgery within 4 weeks</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="previous-dvt">
-                    <label for="previous-dvt">Previous DVT</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="hemoptysis">
-                    <label for="hemoptysis">Hemoptysis</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="clinical-dvt">
-                    <label for="clinical-dvt">Clinical signs of DVT</label>
-                </div>
-                <div class="criterion-card">
-                    <label for="heart-rate" class="text-sm font-medium text-gray-700 flex-1">Heart rate (beats/min)</label>
-                    <input type="number" id="heart-rate" class="form-input flex-1" placeholder="e.g., 100">
-                </div>
-            </section>
+                    <div class="tab-list" role="tablist">
+                        <button type="button" class="tab-button" data-tab-target="tab-presentation" role="tab" aria-selected="true">
+                            <span>1. Presentation</span>
+                            <span class="badge">HR + primary dx</span>
+                        </button>
+                        <button type="button" class="tab-button" data-tab-target="tab-risk" role="tab" aria-selected="false">
+                            <span>2. Risk factors</span>
+                            <span class="badge">7 toggles</span>
+                        </button>
+                    </div>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    <section id="tab-presentation" class="tab-panel active" role="tabpanel">
+                        <div class="panel-heading">
+                            <p class="panel-eyebrow">Step 1</p>
+                            <h2>Current presentation</h2>
+                            <p class="panel-description">Capture the triage heart rate and whether PE is the most likely diagnosis.</p>
+                        </div>
+                        <div class="section-grid section-grid--two">
+                            <div class="field-block">
+                                <label for="heart-rate" class="field-label">Heart rate</label>
+                                <div class="field-combo mt-1">
+                                    <input type="number" id="heart-rate" min="1" max="250" step="1" class="combo-input" placeholder="e.g., 108" required>
+                                    <span class="combo-select">bpm</span>
+                                </div>
+                            </div>
+                            <div class="field-block">
+                                <span class="field-label">PE most likely diagnosis?</span>
+                                <div class="radio-toggle mt-1">
+                                    <input type="radio" id="pe-likely-yes" name="pe-likely" value="yes" required>
+                                    <label for="pe-likely-yes">Yes</label>
+                                    <input type="radio" id="pe-likely-no" name="pe-likely" value="no">
+                                    <label for="pe-likely-no">No</label>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tab-risk" class="tab-panel" role="tabpanel" hidden>
+                        <div class="panel-heading">
+                            <p class="panel-eyebrow">Step 2</p>
+                            <h2>Presence of Wells risk factors</h2>
+                            <p class="panel-description">Toggle each criterion based on documentation prior to therapy.</p>
+                        </div>
+                        <div class="section-grid">
+                            <div class="option-board">
+                                <label class="option-pill">
+                                    <input type="checkbox" id="clinical-dvt"> Clinical signs of DVT
+                                </label>
+                                <label class="option-pill">
+                                    <input type="checkbox" id="immobilization"> Immobilization ≥ 3 days
+                                </label>
+                                <label class="option-pill">
+                                    <input type="checkbox" id="surgery-recent"> Surgery within 4 weeks
+                                </label>
+                                <label class="option-pill">
+                                    <input type="checkbox" id="previous-pe"> Prior PE or DVT
+                                </label>
+                                <label class="option-pill">
+                                    <input type="checkbox" id="hemoptysis"> Hemoptysis
+                                </label>
+                                <label class="option-pill">
+                                    <input type="checkbox" id="malignancy"> Malignancy (on treatment within 6 months)
+                                </label>
+                                <label class="option-pill">
+                                    <input type="checkbox" id="tachycardia"> Heart rate > 100 bpm
+                                </label>
+                            </div>
+                            <div class="field-block note-card">
+                                <h3>Tips</h3>
+                                <ul class="data-points">
+                                    <li><span>Immobilization</span><strong>Confined to bed except bathroom</strong></li>
+                                    <li><span>Malignancy</span><strong>Active treatment or palliative</strong></li>
+                                    <li><span>Surgery</span><strong>General anesthesia within 4 weeks</strong></li>
+                                </ul>
+                            </div>
+                </div>
+                    </section>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate Wells Score">
                     Calculate Wells Score
                 </button>
             </div>
         </form>
+            </section>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Wells Score</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">PE score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <h3>Instructions</h3>
+                    <ul class="info-list">
+                        <li>Complete all required fields in both tabs.</li>
+                        <li>Enter values as documented in the patient chart.</li>
+                        <li>Review all selections before calculating.</li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">Wells Criteria</p>
+                <h2>PE Probability Score</h2>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">points</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -109,38 +158,107 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const resultContainer = document.getElementById('result-container');
+            const resultValue = document.getElementById('result-value');
+            const resultExplanation = document.getElementById('result-explanation');
+            const resultExplanationPanel = document.getElementById('result-explanation-panel');
+
+            const ensureNumber = (id, label) => {
+                const value = parseFloat(document.getElementById(id).value);
+                if (!Number.isFinite(value)) throw new Error(label);
+                return value;
+            };
 
             const collectPayload = () => {
-                const heartRate = parseFloat(document.getElementById('heart-rate').value);
-                if (!Number.isFinite(heartRate) || heartRate <= 0) {
-                    throw new Error('Enter a valid heart rate.');
-                }
+                const heartRate = ensureNumber('heart-rate', 'Heart rate');
+                if (heartRate <= 0) throw new Error('Heart rate must be positive.');
+
+                const peLikely = document.querySelector('input[name="pe-likely"]:checked');
+                if (!peLikely) throw new Error('PE likelihood');
 
                 return {
                     'Heart Rate or Pulse': [heartRate, 'beats/min'],
-                    'Previously Documented Pulmonary Embolism': document.getElementById('previous-pe').checked,
-                    'Immobilization for at least 3 days': document.getElementById('immobilization').checked,
-                    'Malignancy with treatment within 6 months or palliative': document.getElementById('malignancy').checked,
-                    'Pulmonary Embolism is #1 diagnosis OR equally likely': document.getElementById('pe-number-one').checked,
-                    'Surgery in the previous 4 weeks': document.getElementById('surgery-recent').checked,
-                    'Previously documented Deep Vein Thrombosis': document.getElementById('previous-dvt').checked,
-                    'Hemoptysis': document.getElementById('hemoptysis').checked,
+                    'Pulmonary Embolism is #1 diagnosis OR equally likely': peLikely.value === 'yes',
                     'Clinical signs and symptoms of Deep Vein Thrombosis': document.getElementById('clinical-dvt').checked,
+                    'Immobilization for at least 3 days': document.getElementById('immobilization').checked,
+                    'Surgery in the previous 4 weeks': document.getElementById('surgery-recent').checked,
+                    'Previously documented Deep Vein Thrombosis': document.getElementById('previous-pe').checked,
+                    'Hemoptysis': document.getElementById('hemoptysis').checked,
+                    'Malignancy with treatment within 6 months or palliative': document.getElementById('malignancy').checked,
+                    'Heart rate greater than 100 beats per minute': document.getElementById('tachycardia').checked || heartRate > 100
                 };
             };
 
             const renderResult = (result) => {
                 const value = result.answer ?? result.raw_score ?? result.score;
-                document.getElementById('result-value').textContent =
+                resultValue.textContent =
                     value === null || typeof value === 'undefined' ? '—' : value;
+
                 if (result.explanation) {
-                    document.getElementById('result-explanation').textContent = result.explanation;
-                    document.getElementById('result-explanation-panel').classList.remove('hidden');
+                    resultExplanation.textContent = result.explanation;
+                    resultExplanationPanel.classList.remove('hidden');
                 } else {
-                    document.getElementById('result-explanation-panel').classList.add('hidden');
+                    resultExplanationPanel.classList.add('hidden');
                 }
-                document.getElementById('result-container').classList.remove('hidden');
+
+                resultContainer.classList.remove('hidden');
             };
+
+            const togglePanelFields = (panel, enable) => {
+                const fields = panel.querySelectorAll('input, select, textarea, button');
+                fields.forEach((field) => {
+                    if (enable) {
+                        if (field.dataset.requiredBackup === 'true') {
+                            field.setAttribute('required', 'required');
+                        }
+                        field.disabled = false;
+                    } else {
+                        if (field.hasAttribute('required')) {
+                            field.dataset.requiredBackup = 'true';
+                        }
+                        field.removeAttribute('required');
+                        field.disabled = true;
+                    }
+                });
+            };
+
+            const initTabs = () => {
+                const buttons = Array.from(document.querySelectorAll('.tab-button'));
+                const panels = Array.from(document.querySelectorAll('.tab-panel'));
+                if (!buttons.length || !panels.length) return;
+
+                const setActive = (targetId) => {
+                    panels.forEach((panel) => {
+                        const isActive = panel.id === targetId;
+                        panel.hidden = !isActive;
+                        panel.classList.toggle('active', isActive);
+                        panel.setAttribute('aria-hidden', String(!isActive));
+                        togglePanelFields(panel, isActive);
+                    });
+
+                    buttons.forEach((button) => {
+                        const isActive = button.dataset.tabTarget === targetId;
+                        button.setAttribute('aria-selected', String(isActive));
+                        button.classList.toggle('active', isActive);
+                    });
+                };
+
+                panels.forEach((panel, index) => {
+                    const isInitiallyActive = index === 0;
+                    if (!isInitiallyActive) {
+                        togglePanelFields(panel, false);
+                        panel.hidden = true;
+                    }
+                });
+
+                buttons.forEach((button) => {
+                    button.addEventListener('click', () => setActive(button.dataset.tabTarget));
+                });
+
+                setActive(buttons[0].dataset.tabTarget);
+            };
+
+            initTabs();
 
             CalculatorPage.init({
                 formId: 'wells-pe-form',

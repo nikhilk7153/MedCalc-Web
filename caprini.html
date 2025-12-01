@@ -7,119 +7,169 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-6xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Caprini Score (2005)</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">Caprini</span>
+            </div>
+            <h1 class="page-title">Caprini Risk Console</h1>
+            <p class="page-subtitle">
+                Complete the demographics card, then expand each ribbon for recent events, venous history,
+                and chronic conditions. The sidebar reminds you how points accumulate.
+            </p>
+            <div class="hero-metadata">
+                <div><p class="meta-label">Inputs</p><p class="meta-value">30+ risk factors</p></div>
+                <div><p class="meta-label">Output</p><p class="meta-value">VTE risk class</p></div>
+                <div><p class="meta-label">Pattern</p><p class="meta-value">Accordion workflow</p></div>
+            </div>
         </header>
 
-        <form id="caprini-form" class="space-y-8">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please complete age, sex, BMI, and select all applicable criteria.</span>
-            </div>
-
-            <section class="grid md:grid-cols-3 gap-6">
-                <div>
-                    <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
-                    <input type="number" id="age" min="0" max="120" step="1" class="form-input" placeholder="e.g., 58" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Sex</label>
-                    <div class="radio-toggle" id="sex-group">
-                        <input type="radio" name="sex" id="sex-male" value="Male" checked>
-                        <label for="sex-male">Male</label>
-                        <input type="radio" name="sex" id="sex-female" value="Female">
-                        <label for="sex-female">Female</label>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="caprini-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span id="error-text">Please complete age, sex, BMI, and select all applicable criteria.</span>
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <label for="bmi" class="block text-sm font-medium text-gray-700">BMI (kg/m²)</label>
-                    <input type="number" id="bmi" min="10" max="80" step="0.1" class="form-input" placeholder="e.g., 27.4" required>
-                </div>
+
+                    <section class="note-card">
+                        <h3 class="field-label mb-3">Demographics</h3>
+                        <div class="section-grid section-grid--three">
+                            <div>
+                                <label class="field-label" for="age">Age (years)</label>
+                                <input type="number" id="age" min="0" max="120" step="1" class="form-input mt-2" placeholder="e.g., 58" required>
+                            </div>
+                            <div>
+                                <label class="field-label mb-2">Sex</label>
+                                <div class="radio-toggle" id="sex-group">
+                                    <input type="radio" name="sex" id="sex-male" value="Male" checked>
+                                    <label for="sex-male">Male</label>
+                                    <input type="radio" name="sex" id="sex-female" value="Female">
+                                    <label for="sex-female">Female</label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="field-label" for="bmi">BMI (kg/m²)</label>
+                                <input type="number" id="bmi" min="10" max="80" step="any" class="form-input mt-2" placeholder="e.g., 27.4" required>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="callout callout-info">
+                        <p>Use the dropdowns below to capture operative context and mobility status.</p>
+                    </section>
+
+                    <div class="section-grid section-grid--two">
+                        <div class="note-card">
+                            <label class="field-label" for="surgery-type">Planned surgery</label>
+                            <select id="surgery-type" class="form-input mt-2">
+                                <option value="none">None</option>
+                                <option value="minor">Minor</option>
+                                <option value="major">Major (&gt;45 min)</option>
+                                <option value="laparoscopic">Laparoscopic / arthroscopic</option>
+                                <option value="elective major lower extremity arthroplasty">Elective major LE arthroplasty</option>
+                            </select>
+                        </div>
+                        <div class="note-card">
+                            <label class="field-label" for="mobility">Mobility</label>
+                            <select id="mobility" class="form-input mt-2">
+                                <option value="normal">Normal, out of bed</option>
+                                <option value="on bed rest">Medical patient on bed rest</option>
+                                <option value="confined to bed >72 hours">Confined to bed &gt;72 hours</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="accordion space-y-4">
+                        <details>
+                            <summary>Events in the past month</summary>
+                            <div class="grid md:grid-cols-3 gap-4 mt-4">
+                                <label class="option-pill"><input type="checkbox" id="major-surgery"> <span>Major Surgery in the last month</span></label>
+                                <label class="option-pill"><input type="checkbox" id="chf"> <span>Congestive Heart Failure in the last month</span></label>
+                                <label class="option-pill"><input type="checkbox" id="sepsis"> <span>Sepsis in the last month</span></label>
+                                <label class="option-pill"><input type="checkbox" id="pneumonia"> <span>Pneumonia in the last month</span></label>
+                                <label class="option-pill"><input type="checkbox" id="plaster-cast"> <span>Immobilizing plaster cast in the last month</span></label>
+                                <label class="option-pill"><input type="checkbox" id="fracture"> <span>Hip, pelvis, or leg fracture in the last month</span></label>
+                                <label class="option-pill"><input type="checkbox" id="stroke"> <span>Stroke in the last month</span></label>
+                                <label class="option-pill"><input type="checkbox" id="trauma"> <span>Multiple trauma in the last month</span></label>
+                                <label class="option-pill"><input type="checkbox" id="spinal-injury"> <span>Acute spinal cord injury causing paralysis in the last month</span></label>
+                            </div>
+                        </details>
+
+                        <details>
+                            <summary>Venous / clotting history</summary>
+                            <div class="grid md:grid-cols-3 gap-4 mt-4">
+                                <label class="option-pill"><input type="checkbox" id="varicose"> <span>Varicose veins</span></label>
+                                <label class="option-pill"><input type="checkbox" id="swollen-legs"> <span>Current swollen legs</span></label>
+                                <label class="option-pill"><input type="checkbox" id="central-access"> <span>Current central venous access</span></label>
+                                <label class="option-pill"><input type="checkbox" id="prior-dvt"> <span>Previously documented Deep Vein Thrombosis</span></label>
+                                <label class="option-pill"><input type="checkbox" id="prior-pe"> <span>Previously Documented Pulmonary Embolism</span></label>
+                                <label class="option-pill"><input type="checkbox" id="family-thrombosis"> <span>Family history of thrombosis</span></label>
+                                <label class="option-pill"><input type="checkbox" id="factor-v"> <span>Positive Factor V Leiden</span></label>
+                                <label class="option-pill"><input type="checkbox" id="prothrombin"> <span>Positive prothrombin 20210A</span></label>
+                                <label class="option-pill"><input type="checkbox" id="homocysteine"> <span>Elevated serum homocysteine</span></label>
+                                <label class="option-pill"><input type="checkbox" id="lupus-anticoagulant"> <span>Positive lupus anticoagulant</span></label>
+                                <label class="option-pill"><input type="checkbox" id="anticardiolipin"> <span>Elevated anticardiolipin antibody</span></label>
+                                <label class="option-pill"><input type="checkbox" id="hit"> <span>Heparin-induced thrombocytopenia</span></label>
+                                <label class="option-pill"><input type="checkbox" id="thrombophilia"> <span>Other congenital or acquired thrombophilia</span></label>
+                            </div>
+                        </details>
+
+                        <details>
+                            <summary>Other history / malignancy</summary>
+                            <div class="grid md:grid-cols-3 gap-4 mt-4">
+                                <label class="option-pill"><input type="checkbox" id="ibd"> <span>History of inflammatory bowel disease</span></label>
+                                <label class="option-pill"><input type="checkbox" id="ami"> <span>Acute Myocardial infarction</span></label>
+                                <label class="option-pill"><input type="checkbox" id="copd"> <span>Chronic Obstructive Pulmonary Disease</span></label>
+                                <label class="option-pill"><input type="checkbox" id="malignancy"> <span>Present or previous malignancy</span></label>
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate Caprini Score">
+                            Calculate Caprini Score
+                        </button>
+                    </div>
+                </form>
             </section>
 
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label for="surgery-type" class="block text-sm font-medium text-gray-700">Surgery type</label>
-                    <select id="surgery-type" class="form-input">
-                        <option value="none">None</option>
-                        <option value="minor">Minor</option>
-                        <option value="major">Major (>45 min)</option>
-                        <option value="laparoscopic">Laparoscopic / arthroscopic</option>
-                        <option value="elective major lower extremity arthroplasty">Elective major LE arthroplasty</option>
-                    </select>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <p class="badge badge--outline mb-2">Risk tiers</p>
+                    <dl class="reference-list">
+                        <div><dt>0–1</dt><dd>Low</dd></div>
+                        <div><dt>2</dt><dd>Moderate</dd></div>
+                        <div><dt>3–4</dt><dd>High</dd></div>
+                        <div><dt>≥5</dt><dd>Highest</dd></div>
+                    </dl>
                 </div>
-                <div>
-                    <label for="mobility" class="block text-sm font-medium text-gray-700">Mobility</label>
-                    <select id="mobility" class="form-input">
-                        <option value="normal">Normal, out of bed</option>
-                        <option value="on bed rest">Medical patient on bed rest</option>
-                        <option value="confined to bed >72 hours">Confined to bed >72 hours</option>
-                    </select>
+                <div class="sidebar-card">
+                    <h3>Tips</h3>
+                    <ul class="info-list">
+                        <li>Events section is limited to the past 30 days.</li>
+                        <li>Only toggle thrombophilias confirmed by lab or genetics.</li>
+                        <li>Document BMI and surgery type to unlock weighting.</li>
+                    </ul>
                 </div>
-            </section>
+            </aside>
+        </div>
 
-            <section>
-                <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-3">Events in the past month</h2>
-                <div class="grid md:grid-cols-3 gap-4">
-                    <label class="option-pill"><input type="checkbox" id="major-surgery"> <span>Major surgery</span></label>
-                    <label class="option-pill"><input type="checkbox" id="chf"> <span>CHF</span></label>
-                    <label class="option-pill"><input type="checkbox" id="sepsis"> <span>Sepsis</span></label>
-                    <label class="option-pill"><input type="checkbox" id="pneumonia"> <span>Pneumonia</span></label>
-                    <label class="option-pill"><input type="checkbox" id="plaster-cast"> <span>Immobilizing plaster cast</span></label>
-                    <label class="option-pill"><input type="checkbox" id="fracture"> <span>Hip / pelvis / leg fracture</span></label>
-                    <label class="option-pill"><input type="checkbox" id="stroke"> <span>Stroke</span></label>
-                    <label class="option-pill"><input type="checkbox" id="trauma"> <span>Multiple trauma</span></label>
-                    <label class="option-pill"><input type="checkbox" id="spinal-injury"> <span>Acute spinal cord injury</span></label>
-                </div>
-            </section>
-
-            <section>
-                <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-3">Venous/clotting history</h2>
-                <div class="grid md:grid-cols-3 gap-4">
-                    <label class="option-pill"><input type="checkbox" id="varicose"> <span>Varicose veins</span></label>
-                    <label class="option-pill"><input type="checkbox" id="swollen-legs"> <span>Current swollen legs</span></label>
-                    <label class="option-pill"><input type="checkbox" id="central-access"> <span>Current central venous access</span></label>
-                    <label class="option-pill"><input type="checkbox" id="prior-dvt"> <span>Previous DVT</span></label>
-                    <label class="option-pill"><input type="checkbox" id="prior-pe"> <span>Previous PE</span></label>
-                    <label class="option-pill"><input type="checkbox" id="family-thrombosis"> <span>Family history of thrombosis</span></label>
-                    <label class="option-pill"><input type="checkbox" id="factor-v"> <span>Positive Factor V Leiden</span></label>
-                    <label class="option-pill"><input type="checkbox" id="prothrombin"> <span>Positive prothrombin 20210A</span></label>
-                    <label class="option-pill"><input type="checkbox" id="homocysteine"> <span>Elevated homocysteine</span></label>
-                    <label class="option-pill"><input type="checkbox" id="lupus-anticoagulant"> <span>Positive lupus anticoagulant</span></label>
-                    <label class="option-pill"><input type="checkbox" id="anticardiolipin"> <span>Elevated anticardiolipin antibody</span></label>
-                    <label class="option-pill"><input type="checkbox" id="hit"> <span>Heparin-induced thrombocytopenia</span></label>
-                    <label class="option-pill"><input type="checkbox" id="thrombophilia"> <span>Other thrombophilia</span></label>
-                </div>
-            </section>
-
-            <section>
-                <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-3">Other history</h2>
-                <div class="grid md:grid-cols-3 gap-4">
-                    <label class="option-pill"><input type="checkbox" id="ibd"> <span>Inflammatory bowel disease</span></label>
-                    <label class="option-pill"><input type="checkbox" id="ami"> <span>Acute myocardial infarction</span></label>
-                    <label class="option-pill"><input type="checkbox" id="copd"> <span>Chronic obstructive pulmonary disease</span></label>
-                    <label class="option-pill"><input type="checkbox" id="malignancy"> <span>Present or previous malignancy</span></label>
-                </div>
-            </section>
-
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
-                    Calculate Caprini Score
-                </button>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">Caprini</p>
+                <h2>Score</h2>
             </div>
-        </form>
-
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Caprini Score</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Total</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <div class="result-value">
+                <span class="result-unit">points</span>
+                <p id="result-value">—</p>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>

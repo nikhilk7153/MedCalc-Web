@@ -7,70 +7,136 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Glasgow Coma Score (GCS)</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-5xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">GCS</span>
+            </div>
+            <h1 class="page-title">GCS Step Console</h1>
+            <p class="page-subtitle">
+                Move down the three-step rail (Eyes → Verbal → Motor). Each panel mirrors the bedside exam and
+                keeps the summary card updated in real time.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Components</p>
+                    <p class="meta-value">Eye · Verbal · Motor</p>
+                </div>
+                <div>
+                    <p class="meta-label">Output</p>
+                    <p class="meta-value">GCS total</p>
+                </div>
+                <div>
+                    <p class="meta-label">Inputs</p>
+                    <p class="meta-value">Drop-down selections</p>
+                </div>
+            </div>
         </header>
 
-        <form id="gcs-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please select a value for each component.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="gcs-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span id="error-text">Please select a value for each component.</span>
+                        </div>
+                    </div>
 
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label for="eye-response" class="block text-sm font-medium text-gray-700">Best eye response</label>
-                    <select id="eye-response" class="form-input" required>
-                        <option value="eyes open spontaneously">Eyes open spontaneously</option>
-                        <option value="eye opening to verbal command">Eye opening to verbal command</option>
-                        <option value="eye opening to pain">Eye opening to pain</option>
-                        <option value="no eye opening">No eye opening</option>
-                        <option value="not testable">Not testable / unclear</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="verbal-response" class="block text-sm font-medium text-gray-700">Best verbal response</label>
-                    <select id="verbal-response" class="form-input" required>
-                        <option value="oriented">Oriented</option>
-                        <option value="confused">Confused</option>
-                        <option value="inappropriate words">Inappropriate words</option>
-                        <option value="incomprehensible sounds">Incomprehensible sounds</option>
-                        <option value="no verbal response">No verbal response</option>
-                        <option value="not testable">Not testable / intubated</option>
-                    </select>
-                </div>
+                    <ol class="stepper">
+                        <li class="step-card">
+                            <div class="step-header">
+                                <span class="step-index">1</span>
+                                <div>
+                                    <h3>Best eye response</h3>
+                                    <p class="helper-text">Document the most responsive eye opening.</p>
+                                </div>
+                            </div>
+                            <select id="eye-response" class="form-input mt-3" required>
+                                <option value="eyes open spontaneously">Eyes open spontaneously</option>
+                                <option value="eye opening to verbal command">Eye opening to verbal command</option>
+                                <option value="eye opening to pain">Eye opening to pain</option>
+                                <option value="no eye opening">No eye opening</option>
+                                <option value="not testable">Not testable / unclear</option>
+                            </select>
+                        </li>
+                        <li class="step-card">
+                            <div class="step-header">
+                                <span class="step-index">2</span>
+                                <div>
+                                    <h3>Best verbal response</h3>
+                                    <p class="helper-text">Use intubated/not testable when applicable.</p>
+                                </div>
+                            </div>
+                            <select id="verbal-response" class="form-input mt-3" required>
+                                <option value="oriented">Oriented</option>
+                                <option value="confused">Confused</option>
+                                <option value="inappropriate words">Inappropriate words</option>
+                                <option value="incomprehensible sounds">Incomprehensible sounds</option>
+                                <option value="no verbal response">No verbal response</option>
+                                <option value="not testable">Not testable / intubated</option>
+                            </select>
+                        </li>
+                        <li class="step-card">
+                            <div class="step-header">
+                                <span class="step-index">3</span>
+                                <div>
+                                    <h3>Best motor response</h3>
+                                    <p class="helper-text">Record the single strongest motor behavior.</p>
+                                </div>
+                            </div>
+                            <select id="motor-response" class="form-input mt-3" required>
+                                <option value="obeys commands">Obeys commands</option>
+                                <option value="localizes pain">Localizes pain</option>
+                                <option value="withdrawal from pain">Withdrawal from pain</option>
+                                <option value="flexion to pain">Flexion to pain (decorticate)</option>
+                                <option value="extension to pain">Extension to pain (decerebrate)</option>
+                                <option value="no motor response">No motor response</option>
+                            </select>
+                        </li>
+                    </ol>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate GCS">
+                            Calculate GCS
+                        </button>
+                    </div>
+                </form>
             </section>
 
-            <section>
-                <label for="motor-response" class="block text-sm font-medium text-gray-700">Best motor response</label>
-                <select id="motor-response" class="form-input" required>
-                    <option value="obeys commands">Obeys commands</option>
-                    <option value="localizes pain">Localizes pain</option>
-                    <option value="withdrawal from pain">Withdrawal from pain</option>
-                    <option value="flexion to pain">Flexion to pain (decorticate)</option>
-                    <option value="extension to pain">Extension to pain (decerebrate)</option>
-                    <option value="no motor response">No motor response</option>
-                </select>
-            </section>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <p class="badge badge--outline mb-2">Component cheat sheet</p>
+                    <ul class="info-list">
+                        <li>Eye 4 → spontaneous</li>
+                        <li>Verbal 5 → oriented conversation</li>
+                        <li>Motor 6 → obeys commands</li>
+                    </ul>
+                </div>
+                <div class="sidebar-card">
+                    <h3>Total ranges</h3>
+                    <dl class="reference-list">
+                        <div><dt>13–15</dt><dd>Mild</dd></div>
+                        <div><dt>9–12</dt><dd>Moderate</dd></div>
+                        <div><dt>3–8</dt><dd>Severe</dd></div>
+                    </dl>
+                </div>
+            </aside>
+        </div>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
-                    Calculate GCS
-                </button>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">GCS</p>
+                <h2>Result</h2>
             </div>
-        </form>
-
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">GCS Result</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <div class="result-value">
+                <span class="result-unit">Score</span>
+                <p id="result-value">—</p>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>

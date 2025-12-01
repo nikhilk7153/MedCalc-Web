@@ -6,117 +6,149 @@
     <title>Glasgow-Blatchford Bleeding Score</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
-    <style>
-        .sex-toggle {
-            display: inline-flex;
-            background: #eef2ff;
-            padding: 0.25rem;
-            border-radius: 999px;
-            gap: 0.25rem;
-        }
-
-        .sex-toggle button {
-            border: none;
-            background: transparent;
-            padding: 0.45rem 1.25rem;
-            border-radius: 999px;
-            font-weight: 600;
-            color: #4c1d95;
-            cursor: pointer;
-        }
-
-        .sex-toggle button.active {
-            background: white;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            color: #1d4ed8;
-        }
-    </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-4xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Glasgow-Blatchford Bleeding Score</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">GBS</span>
+            </div>
+            <h1 class="page-title">ED Triage Sheet</h1>
+            <p class="page-subtitle">
+                Work across the vitals, labs, and symptom ribbons to populate the Glasgow-Blatchford score.
+                Each ribbon keeps its own inputs so you can audit quickly.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Inputs</p>
+                    <p class="meta-value">Sex · HR · SBP · BUN · Hgb · 4 flags</p>
+                </div>
+                <div>
+                    <p class="meta-label">Output</p>
+                    <p class="meta-value">Bleeding risk score</p>
+                </div>
+                <div>
+                    <p class="meta-label">Use case</p>
+                    <p class="meta-value">Upper GI bleed triage</p>
+                </div>
+            </div>
         </header>
 
-        <form id="gbs-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Complete all laboratory and vital sign fields.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="gbs-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span id="error-text">Complete all laboratory and vital sign fields.</span>
+                        </div>
+                    </div>
 
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Sex</label>
-                    <div class="sex-toggle" id="sex-group">
-                        <button type="button" data-value="Male">Male</button>
-                        <button type="button" data-value="Female">Female</button>
+                    <section class="ribbon ribbon--blue">
+                        <div class="ribbon-header">
+                            <h3>Vitals</h3>
+                            <div class="sex-toggle" id="sex-group">
+                                <button type="button" data-value="Male">Male</button>
+                                <button type="button" data-value="Female">Female</button>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label class="field-label">Heart rate (beats/min)</label>
+                                <input type="number" id="heart-rate" min="0" step="1" class="form-input" placeholder="e.g., 105" required>
+                            </div>
+                            <div>
+                                <label class="field-label">Systolic BP (mm Hg)</label>
+                                <input type="number" id="systolic-bp" min="0" step="1" class="form-input" placeholder="e.g., 108" required>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="ribbon ribbon--amber">
+                        <div class="ribbon-header">
+                            <h3>Labs</h3>
+                            <p class="helper-text">Use the draw closest to presentation.</p>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4 mt-4">
+                            <div class="field-block">
+                                <label class="field-label mb-2">Blood urea nitrogen</label>
+                                <div class="field-combo">
+                                    <input type="number" id="bun" min="0" step="any" class="combo-input" placeholder="e.g., 28" required>
+                                    <select id="bun-unit" class="combo-select">
+                                        <option value="mg/dL">mg/dL</option>
+                                        <option value="mmol/L">mmol/L</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="field-block">
+                                <label class="field-label mb-2">Hemoglobin</label>
+                                <div class="field-combo">
+                                    <input type="number" id="hemoglobin" min="0" step="any" class="combo-input" placeholder="e.g., 12.2" required>
+                                    <select id="hemoglobin-unit" class="combo-select">
+                                        <option value="g/dL">g/dL</option>
+                                        <option value="g/L">g/L</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="ribbon ribbon--plum">
+                        <div class="ribbon-header">
+                            <h3>Symptoms & history</h3>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-3 mt-4">
+                            <label class="option-pill">
+                                <input type="checkbox" id="melena">
+                                <span>Melena present</span>
+                            </label>
+                            <label class="option-pill">
+                                <input type="checkbox" id="syncope">
+                                <span>Recent syncope</span>
+                            </label>
+                            <label class="option-pill">
+                                <input type="checkbox" id="hepatic-disease">
+                                <span>Hepatic disease history</span>
+                            </label>
+                            <label class="option-pill">
+                                <input type="checkbox" id="cardiac-failure">
+                                <span>Cardiac failure present</span>
+                            </label>
+                        </div>
+                    </section>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate GBS">
+                            Calculate GBS
+                        </button>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Heart rate</label>
-                    <input type="number" id="heart-rate" min="0" step="1" class="form-input" placeholder="beats per minute" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Systolic BP</label>
-                    <input type="number" id="systolic-bp" min="0" step="1" class="form-input" placeholder="e.g., 108" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">BUN</label>
-                    <div class="field-combo">
-                        <input type="number" id="bun" min="0" step="0.1" class="combo-input" placeholder="e.g., 28" required>
-                        <select id="bun-unit" class="combo-select">
-                            <option value="mg/dL">mg/dL</option>
-                            <option value="mmol/L">mmol/L</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Hemoglobin</label>
-                    <div class="field-combo">
-                        <input type="number" id="hemoglobin" min="0" step="0.1" class="combo-input" placeholder="e.g., 12.2" required>
-                        <select id="hemoglobin-unit" class="combo-select">
-                            <option value="g/dL">g/dL</option>
-                            <option value="g/L">g/L</option>
-                        </select>
-                    </div>
-                </div>
+                </form>
             </section>
 
-            <section class="grid md:grid-cols-2 gap-4">
-                <label class="option-pill">
-                    <input type="checkbox" id="melena">
-                    <span>Melena present</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="syncope">
-                    <span>Recent syncope</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="hepatic-disease">
-                    <span>Hepatic disease history</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="cardiac-failure">
-                    <span>Cardiac failure present</span>
-                </label>
-            </section>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <h3>Checklist</h3>
+                    <ul class="info-list">
+                        <li>Sex selection updates hemoglobin thresholds automatically.</li>
+                        <li>All vitals should come from the triage encounter.</li>
+                        <li>Return only the numeric score in your final response.</li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
-                    Calculate GBS
-                </button>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">GBS</p>
+                <h2>Score</h2>
             </div>
-        </form>
-
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">GBS Result</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <div class="result-value">
+                <span class="result-unit">points</span>
+                <p id="result-value">—</p>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>

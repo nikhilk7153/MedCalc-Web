@@ -7,67 +7,149 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Serum Osmolality</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">Serum Osmolality</span>
+            </div>
+            <h1 class="page-title">Electrolyte Lab Strip</h1>
+            <p class="page-subtitle">
+                Capture sodium, BUN, and glucose exactly as they appear on the report. The panel layout below
+                mimics a chemistry analyzer strip so each value lives in its own card.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Inputs</p>
+                    <p class="meta-value">3 chemistry cards</p>
+                </div>
+                <div>
+                    <p class="meta-label">Units</p>
+                    <p class="meta-value">mEq/L · mmol/L · mg/dL</p>
+                </div>
+                <div>
+                    <p class="meta-label">Output</p>
+                    <p class="meta-value">mOsm/kg</p>
+                </div>
+            </div>
         </header>
 
-        <form id="osmo-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Provide sodium, BUN, and glucose.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="osmo-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span class="badge badge--alert">Missing data</span>
+                        </div>
+                        <p id="error-text">Provide sodium, BUN, and glucose directly from the lab report.</p>
+                    </div>
 
-            <section class="space-y-4">
-                <div>
-                    <label for="sodium" class="block text-sm font-medium text-gray-700">Sodium</label>
-                    <div class="field-combo">
-                        <input type="number" id="sodium" min="100" max="200" step="0.1" class="combo-input" placeholder="e.g., 138" required>
-                        <select id="sodium-unit" class="combo-select">
+                    <div class="lab-strip-grid">
+                        <article class="lab-card">
+                            <div class="lab-card__heading">
+                                <span class="lab-chip">Panel A</span>
+                                <h3>Sodium</h3>
+                            </div>
+                            <p class="lab-card__helper">Enter the exact concentration.</p>
+                            <div class="lab-card__controls">
+                                <div class="lab-combo">
+                                    <input type="number" id="sodium" min="100" max="200" step="any" class="lab-combo__input" placeholder="e.g., 138" required>
+                                    <select id="sodium-unit" class="lab-combo__select">
                             <option value="mEq/L">mEq/L</option>
                             <option value="mmol/L">mmol/L</option>
                         </select>
                     </div>
                 </div>
-                <div>
-                    <label for="bun" class="block text-sm font-medium text-gray-700">BUN</label>
-                    <div class="field-combo">
-                        <input type="number" id="bun" min="0" step="0.1" class="combo-input" placeholder="mg/dL" required>
-                        <select id="bun-unit" class="combo-select">
-                            <option value="mg/dL">mg/dL</option>
-                            <option value="mmol/L">mmol/L</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label for="glucose" class="block text-sm font-medium text-gray-700">Glucose</label>
-                    <div class="field-combo">
-                        <input type="number" id="glucose" min="0" step="1" class="combo-input" placeholder="mg/dL" required>
-                        <select id="glucose-unit" class="combo-select">
-                            <option value="mg/dL">mg/dL</option>
-                            <option value="mmol/L">mmol/L</option>
-                        </select>
-                    </div>
-                </div>
-            </section>
+                        </article>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                        <article class="lab-card">
+                            <div class="lab-card__heading">
+                                <span class="lab-chip">Panel B</span>
+                                <h3>Blood Urea Nitrogen</h3>
+                            </div>
+                            <p class="lab-card__helper">Use the chemistry analyzer unit selector only.</p>
+                            <div class="lab-card__controls">
+                                <div class="lab-combo">
+                                    <input type="number" id="bun" min="0" step="any" class="lab-combo__input" placeholder="e.g., 25" required>
+                                    <select id="bun-unit" class="lab-combo__select">
+                            <option value="mg/dL">mg/dL</option>
+                            <option value="mmol/L">mmol/L</option>
+                        </select>
+                    </div>
+                </div>
+                        </article>
+
+                        <article class="lab-card">
+                            <div class="lab-card__heading">
+                                <span class="lab-chip">Panel C</span>
+                                <h3>Glucose</h3>
+                            </div>
+                            <p class="lab-card__helper">Copy directly; do not convert manually.</p>
+                            <div class="lab-card__controls">
+                                <div class="lab-combo">
+                                    <input type="number" id="glucose" min="0" step="1" class="lab-combo__input" placeholder="e.g., 320" required>
+                                    <select id="glucose-unit" class="lab-combo__select">
+                            <option value="mg/dL">mg/dL</option>
+                            <option value="mmol/L">mmol/L</option>
+                        </select>
+                    </div>
+                </div>
+                        </article>
+
+                        <article id="osmo-preview-card" class="lab-card lab-card--preview">
+                            <div class="lab-card__heading">
+                                <span class="lab-chip">Preview</span>
+                                <h3>Osmolar gap status</h3>
+                            </div>
+                            <p id="osmo-preview-value" class="lab-card__value">Awaiting labs</p>
+                            <p id="osmo-preview-status" class="lab-card__helper">
+                                Complete all three cards to unlock this preview panel.
+                            </p>
+                        </article>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate Osmolality">
                     Calculate Osmolality
                 </button>
             </div>
         </form>
+            </section>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Estimated Serum Osmolality</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">mOsm/kg</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <p class="badge badge--outline mb-2">Checklist</p>
+                    <ul class="info-list">
+                        <li>No manual conversions—use the selectors.</li>
+                        <li>Use serum (not plasma) values if both are present.</li>
+                        <li>Calculated osmolality is valid for most adult patients.</li>
+                    </ul>
+                </div>
+                <div class="sidebar-card">
+                    <h3>When labs mismatch</h3>
+                    <ul class="info-list">
+                        <li>Compare with measured osmolality to estimate osmolar gap.</li>
+                        <li>Large gaps may suggest toxic alcohols or lab error.</li>
+                        <li>Re-run the strip if any results look implausible.</li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">Serum</p>
+                <h2>Calculated osmolality</h2>
+                <p class="result-subtitle">Returned in mOsm/kg.</p>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">mOsm/kg</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -76,6 +158,31 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const previewCard = document.getElementById('osmo-preview-card');
+            const previewValue = document.getElementById('osmo-preview-value');
+            const previewStatus = document.getElementById('osmo-preview-status');
+            const labIds = ['sodium', 'bun', 'glucose'];
+
+            const labsReady = () => labIds.every((id) => document.getElementById(id).value.trim() !== '');
+
+            const updatePreview = () => {
+                if (labsReady()) {
+                    previewCard.classList.add('lab-card--ready');
+                    previewValue.textContent = 'Ready to compute';
+                    previewStatus.textContent = 'Submit to calculate osmolality and reconcile the osmolar gap.';
+                } else {
+                    previewCard.classList.remove('lab-card--ready');
+                    previewValue.textContent = 'Awaiting labs';
+                    previewStatus.textContent = 'Complete all three cards to unlock this preview panel.';
+                }
+            };
+
+            labIds.forEach((id) => {
+                ['input', 'change'].forEach((evt) => {
+                    document.getElementById(id).addEventListener(evt, updatePreview);
+                });
+            });
+            updatePreview();
 
             const collectPayload = () => {
                 const sodium = parseFloat(document.getElementById('sodium').value);
@@ -95,8 +202,14 @@
 
             const renderResult = (result) => {
                 const value = result.answer ?? result.raw_score ?? result.score;
-                document.getElementById('result-value').textContent =
+                const formattedValue =
                     value === null || typeof value === 'undefined' ? '—' : value;
+
+                document.getElementById('result-value').textContent = formattedValue;
+                previewCard.classList.add('lab-card--ready');
+                previewValue.textContent = formattedValue;
+                previewStatus.textContent = 'Calculated osmolality shown above.';
+
                 if (result.explanation) {
                     document.getElementById('result-explanation').textContent = result.explanation;
                     document.getElementById('result-explanation-panel').classList.remove('hidden');

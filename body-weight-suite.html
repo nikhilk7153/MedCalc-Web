@@ -21,12 +21,46 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-5xl space-y-10">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Body Weight Suite</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">Body Weight Suite</span>
+            </div>
+            <h1 class="page-title">Integrated Body Weight Calculators</h1>
+            <p class="page-subtitle">
+                Capture sex, weight, height, and target BMI (when required) before selecting the calculator. Use the helper text and checklist in the sidebar to keep values consistent across the suite.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Calculators</p>
+                    <p class="meta-value">BMI · IBW · ABW · Target · BSA</p>
+                </div>
+                <div>
+                    <p class="meta-label">Inputs</p>
+                    <p class="meta-value">Sex · weight · multiple height modes</p>
+                </div>
+                <div>
+                    <p class="meta-label">Units</p>
+                    <p class="meta-value">kg/lbs + cm/m/ft-in</p>
+                </div>
+            </div>
         </header>
+
+        <div class="split-layout">
+            <section class="layout-primary">
+                <div class="callout callout-info">
+                    <div class="callout-header">
+                        <span class="badge badge--neutral">Checklist</span>
+                        <h2>Before running a calculator</h2>
+                    </div>
+                    <ul class="callout-list">
+                        <li>Align all units with the chart—do not convert manually.</li>
+                        <li>Confirm whether target BMI is required (Target Weight only).</li>
+                        <li>Document height using a single method (metric or ft/in).</li>
+                    </ul>
+                </div>
 
         <section class="input-panel space-y-6">
             <form id="body-form" class="space-y-6">
@@ -52,12 +86,15 @@
                     </div>
                     <div>
                         <label for="weight-value" class="block text-sm font-medium text-gray-700">Weight</label>
-                        <div class="field-combo mt-1">
-                            <input type="number" id="weight-value" step="0.1" min="1" class="combo-input" placeholder="e.g., 72" required>
-                            <select id="weight-unit" class="combo-select">
-                                <option value="kg">kg</option>
-                                <option value="lbs">lbs</option>
-                            </select>
+                        <div class="unit-input-group mt-1">
+                            <div class="field-combo">
+                                <input type="number" id="weight-value" step="0.1" min="1" class="combo-input" placeholder="e.g., 72" required>
+                            </div>
+                            <input type="hidden" id="weight-unit" value="kg">
+                            <div class="unit-toggle" role="group" aria-label="Weight units">
+                                <button type="button" class="unit-chip is-active" data-weight-unit="kg" aria-pressed="true">kg</button>
+                                <button type="button" class="unit-chip" data-weight-unit="lbs" aria-pressed="false">lbs</button>
+                            </div>
                         </div>
                     </div>
                     <div id="target-bmi-wrapper" class="hidden">
@@ -101,6 +138,36 @@
                 <p id="result-unit" class="text-sm text-gray-500 mt-1">—</p>
             </div>
         </section>
+            </section>
+
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <p class="badge badge--outline mb-2">Guidance</p>
+                    <h3>Sex & weight tips</h3>
+                    <ul class="info-list">
+                        <li>Sex selector is binary to align with legacy formulas.</li>
+                        <li>Weight entry accepts kg or lbs—pick whichever is charted.</li>
+                        <li>For Target Weight, provide a goal BMI between 10 and 50.</li>
+                    </ul>
+                </div>
+                <div class="sidebar-card">
+                    <h3>Height entry</h3>
+                    <ul class="info-list">
+                        <li>Metric mode stores a single numeric value.</li>
+                        <li>Feet/inches mode requires both fields.</li>
+                        <li>Switching modes automatically resets requirements.</li>
+                    </ul>
+                </div>
+                <div class="sidebar-card">
+                    <h3>Before you submit</h3>
+                    <ol class="steps-list">
+                        <li>Confirm the calculator selector matches the benchmark row.</li>
+                        <li>Verify the checklist items above the form.</li>
+                        <li>Return only the numeric result in the requested unit.</li>
+                    </ol>
+                </div>
+            </aside>
+        </div>
     </div>
 
     <script src="./static/js/calculator-page.js"></script>
@@ -116,6 +183,9 @@
             const resultTitle = document.getElementById('result-title');
             const resultValue = document.getElementById('result-value');
             const resultUnit = document.getElementById('result-unit');
+            const weightInput = document.getElementById('weight-value');
+            const weightUnitInput = document.getElementById('weight-unit');
+            const weightUnitButtons = document.querySelectorAll('[data-weight-unit]');
             const slugMeta = {
                 'body-mass-index-bmi': { title: 'Body Mass Index', unit: 'kg/m²' },
                 'ideal-body-weight': { title: 'Ideal Body Weight', unit: 'kg' },
@@ -123,6 +193,57 @@
                 'target-weight': { title: 'Target Weight', unit: 'kg' },
                 'body-surface-area-calculator': { title: 'Body Surface Area', unit: 'm²' },
             };
+
+            const setupWeightUnitToggle = () => {
+                if (!weightInput || !weightUnitInput || !weightUnitButtons.length) return;
+
+                const setActiveButton = (unit) => {
+                    weightUnitButtons.forEach((button) => {
+                        const isActive = button.dataset.weightUnit === unit;
+                        button.classList.toggle('is-active', isActive);
+                        button.setAttribute('aria-pressed', String(isActive));
+                    });
+                };
+
+                const convertWeight = (value, fromUnit, toUnit) => {
+                    if (!Number.isFinite(value) || fromUnit === toUnit) return value;
+                    const factor = 2.2046226218;
+                    if (fromUnit === 'kg' && toUnit === 'lbs') {
+                        return value * factor;
+                    }
+                    if (fromUnit === 'lbs' && toUnit === 'kg') {
+                        return value / factor;
+                    }
+                    return value;
+                };
+
+                const formatWeight = (value) => {
+                    if (!Number.isFinite(value)) return '';
+                    const rounded = Math.round(value * 100) / 100;
+                    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+                };
+
+                weightUnitButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const nextUnit = button.dataset.weightUnit;
+                        const currentUnit = weightUnitInput.value || 'kg';
+                        if (nextUnit === currentUnit) return;
+
+                        const numericValue = parseFloat(weightInput.value);
+                        if (Number.isFinite(numericValue)) {
+                            const converted = convertWeight(numericValue, currentUnit, nextUnit);
+                            weightInput.value = formatWeight(converted);
+                        }
+
+                        weightUnitInput.value = nextUnit;
+                        setActiveButton(nextUnit);
+                    });
+                });
+
+                setActiveButton(weightUnitInput.value || 'kg');
+            };
+
+            setupWeightUnitToggle();
 
             const updateHeightMode = () => {
                 const mode = heightMode.value;

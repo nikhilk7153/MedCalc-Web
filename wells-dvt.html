@@ -7,107 +7,153 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
     <style>
-        .criterion-card {
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 1rem 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 0.9rem;
-            background: #f9fafb;
+        .score-table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .criterion-card input {
-            width: 20px;
-            height: 20px;
-            accent-color: #2563eb;
+        .score-table th,
+        .score-table td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.85rem 0.5rem;
+            text-align: left;
         }
-        .criterion-card label {
-            font-size: 0.95rem;
-            color: #111827;
-            font-weight: 500;
+        .score-table th {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
         }
-        .criteria-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+        .score-table tr:last-of-type td {
+            border-bottom: none;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-4xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Wells Criteria for DVT</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">Wells DVT</span>
+            </div>
+            <h1 class="page-title">Deep Vein Thrombosis Scoring Matrix</h1>
+            <p class="page-subtitle">
+                Review each criterion in the matrix and select “Yes” or “No”. The table keeps the weighting visible, offering a different experience than the standard card layout.
+            </p>
         </header>
 
-        <form id="wells-dvt-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please check the criteria below.</span>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="wells-dvt-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span class="badge badge--alert">Action needed</span>
+                            <p id="error-text">Please check the criteria below.</p>
+                        </div>
             </div>
 
-            <section class="criteria-list">
-                <div class="criterion-card">
-                    <input type="checkbox" id="active-cancer">
-                    <label for="active-cancer">Active cancer (treatment within 6 months)</label>
+                    <div class="overflow-auto rounded-2xl border border-slate-200 bg-white">
+                        <table class="score-table">
+                            <thead>
+                                <tr>
+                                    <th>Criterion</th>
+                                    <th>Yes</th>
+                                    <th>No</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr data-field="active_cancer">
+                                    <td>Active cancer (treatment within 6 months)</td>
+                                    <td><input type="radio" name="active_cancer" value="true"></td>
+                                    <td><input type="radio" name="active_cancer" value="false" checked></td>
+                                </tr>
+                                <tr data-field="bedridden_for_atleast_3_days">
+                                    <td>Bedridden ≥ 3 days recently</td>
+                                    <td><input type="radio" name="bedridden" value="true"></td>
+                                    <td><input type="radio" name="bedridden" value="false" checked></td>
+                                </tr>
+                                <tr data-field="major_surgery_in_last_12_weeks">
+                                    <td>Major surgery in the last 12 weeks</td>
+                                    <td><input type="radio" name="major_surgery" value="true"></td>
+                                    <td><input type="radio" name="major_surgery" value="false" checked></td>
+                                </tr>
+                                <tr data-field="calf_swelling_3cm">
+                                    <td>Calf swelling &gt; 3 cm compared to other leg</td>
+                                    <td><input type="radio" name="calf_swelling" value="true"></td>
+                                    <td><input type="radio" name="calf_swelling" value="false" checked></td>
+                                </tr>
+                                <tr data-field="collateral_superficial_veins">
+                                    <td>Collateral (nonvaricose) superficial veins present</td>
+                                    <td><input type="radio" name="collateral_veins" value="true"></td>
+                                    <td><input type="radio" name="collateral_veins" value="false" checked></td>
+                                </tr>
+                                <tr data-field="leg_swollen">
+                                    <td>Entire leg swollen</td>
+                                    <td><input type="radio" name="leg_swollen" value="true"></td>
+                                    <td><input type="radio" name="leg_swollen" value="false" checked></td>
+                                </tr>
+                                <tr data-field="localized_tenderness_on_deep_venuous_system">
+                                    <td>Localized tenderness along deep venous system</td>
+                                    <td><input type="radio" name="localized_tenderness" value="true"></td>
+                                    <td><input type="radio" name="localized_tenderness" value="false" checked></td>
+                                </tr>
+                                <tr data-field="pitting_edema_on_symptomatic_leg">
+                                    <td>Pitting edema confined to symptomatic leg</td>
+                                    <td><input type="radio" name="pitting_edema" value="true"></td>
+                                    <td><input type="radio" name="pitting_edema" value="false" checked></td>
+                                </tr>
+                                <tr data-field="paralysis_paresis_immobilization_in_lower_extreme">
+                                    <td>Paralysis/paresis or plaster immobilization</td>
+                                    <td><input type="radio" name="paralysis" value="true"></td>
+                                    <td><input type="radio" name="paralysis" value="false" checked></td>
+                                </tr>
+                                <tr data-field="previous_dvt_documented">
+                                    <td>Previously documented DVT</td>
+                                    <td><input type="radio" name="previous_dvt" value="true"></td>
+                                    <td><input type="radio" name="previous_dvt" value="false" checked></td>
+                                </tr>
+                                <tr data-field="alternative_to_dvt_diagnosis">
+                                    <td>Alternative diagnosis as likely or more likely</td>
+                                    <td><input type="radio" name="alternative_diagnosis" value="true"></td>
+                                    <td><input type="radio" name="alternative_diagnosis" value="false" checked></td>
+                                </tr>
+                            </tbody>
+                        </table>
                 </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="bedridden">
-                    <label for="bedridden">Bedridden recently >3 days</label>
+
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate DVT Score">
+                            Calculate DVT Score
+                        </button>
                 </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="major-surgery">
-                    <label for="major-surgery">Major surgery within 12 weeks</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="calf-swelling">
-                    <label for="calf-swelling">Calf swelling &gt;3 cm compared to other leg</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="collateral-veins">
-                    <label for="collateral-veins">Collateral (nonvaricose) superficial veins present</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="leg-swollen">
-                    <label for="leg-swollen">Entire leg swollen</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="localized-tenderness">
-                    <label for="localized-tenderness">Localized tenderness along deep venous system</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="pitting-edema">
-                    <label for="pitting-edema">Pitting edema confined to symptomatic leg</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="paralysis">
-                    <label for="paralysis">Paralysis/paresis/recent plaster immobilization of leg</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="previous-dvt">
-                    <label for="previous-dvt">Previously documented DVT</label>
-                </div>
-                <div class="criterion-card">
-                    <input type="checkbox" id="alternative-diagnosis">
-                    <label for="alternative-diagnosis">Alternative diagnosis as likely or more likely</label>
-                </div>
+                </form>
             </section>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
-                    Calculate DVT Score
-                </button>
-            </div>
-        </form>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <p class="badge badge--outline mb-2">Guidance</p>
+                    <h3>Scoring reminders</h3>
+                    <ul class="info-list">
+                        <li>Each positive criterion adds 1 point.</li>
+                        <li>Alternative diagnosis subtracts 2 points.</li>
+                        <li>Ensure signs are present at the time of evaluation.</li>
+                    </ul>
+                </div>
+            </aside>
+                </div>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Wells DVT Score</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">Wells DVT</p>
+                <h2>Probability Score</h2>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">points</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -116,20 +162,24 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
-            const checkbox = (id) => document.getElementById(id).checked;
+
+            const valueFromRadios = (name) => {
+                const selected = document.querySelector(`input[name="${name}"]:checked`);
+                return selected ? selected.value === 'true' : false;
+            };
 
             const collectPayload = () => ({
-                active_cancer: checkbox('active-cancer'),
-                bedridden_for_atleast_3_days: checkbox('bedridden'),
-                major_surgery_in_last_12_weeks: checkbox('major-surgery'),
-                calf_swelling_3cm: checkbox('calf-swelling'),
-                collateral_superficial_veins: checkbox('collateral-veins'),
-                leg_swollen: checkbox('leg-swollen'),
-                localized_tenderness_on_deep_venuous_system: checkbox('localized-tenderness'),
-                pitting_edema_on_symptomatic_leg: checkbox('pitting-edema'),
-                paralysis_paresis_immobilization_in_lower_extreme: checkbox('paralysis'),
-                previous_dvt_documented: checkbox('previous-dvt'),
-                alternative_to_dvt_diagnosis: checkbox('alternative-diagnosis'),
+                active_cancer: valueFromRadios('active_cancer'),
+                bedridden_for_atleast_3_days: valueFromRadios('bedridden'),
+                major_surgery_in_last_12_weeks: valueFromRadios('major_surgery'),
+                calf_swelling_3cm: valueFromRadios('calf_swelling'),
+                collateral_superficial_veins: valueFromRadios('collateral_veins'),
+                leg_swollen: valueFromRadios('leg_swollen'),
+                localized_tenderness_on_deep_venuous_system: valueFromRadios('localized_tenderness'),
+                pitting_edema_on_symptomatic_leg: valueFromRadios('pitting_edema'),
+                paralysis_paresis_immobilization_in_lower_extreme: valueFromRadios('paralysis'),
+                previous_dvt_documented: valueFromRadios('previous_dvt'),
+                alternative_to_dvt_diagnosis: valueFromRadios('alternative_diagnosis'),
             });
 
             const renderResult = (result) => {

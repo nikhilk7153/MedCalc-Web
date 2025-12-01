@@ -7,124 +7,191 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-5xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">Charlson Comorbidity Index</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">CCI</span>
+            </div>
+            <h1 class="page-title">Charlson Comorbidity Workboard</h1>
+            <p class="page-subtitle">
+                Record age and disease burdens, then flip the tiles in each lane. The scoring summary on the right
+                keeps you oriented while you move through the board.
+            </p>
+            <div class="hero-metadata">
+                <div><p class="meta-label">Inputs</p><p class="meta-value">Age · 4 severity selects · 13 tiles</p></div>
+                <div><p class="meta-label">Output</p><p class="meta-value">Charlson score</p></div>
+                <div><p class="meta-label">Use</p><p class="meta-value">Baseline mortality risk</p></div>
+            </div>
         </header>
 
-        <form id="cci-form" class="space-y-8">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please fill out age and select all relevant comorbidities.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="cci-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span id="error-text">Please fill out age and select all relevant comorbidities.</span>
+                        </div>
+                    </div>
 
-            <section class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label for="age" class="block text-sm font-medium text-gray-700">Age (years)</label>
-                    <input type="number" id="age" min="0" max="120" step="1" class="form-input" placeholder="e.g., 64" required>
-                </div>
-                <div>
-                    <label for="liver-disease" class="block text-sm font-medium text-gray-700">Liver disease</label>
-                    <select id="liver-disease" class="form-input">
-                        <option value="none">None</option>
-                        <option value="mild">Mild</option>
-                        <option value="moderate to severe">Moderate to severe</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="diabetes" class="block text-sm font-medium text-gray-700">Diabetes mellitus</label>
-                    <select id="diabetes" class="form-input">
-                        <option value="none or diet-controlled">None / diet-controlled</option>
-                        <option value="uncomplicated">Uncomplicated</option>
-                        <option value="end-organ damage">End-organ damage</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="solid-tumor" class="block text-sm font-medium text-gray-700">Solid tumor</label>
-                    <select id="solid-tumor" class="form-input">
-                        <option value="none">None</option>
-                        <option value="localized">Localized</option>
-                        <option value="metastatic">Metastatic</option>
-                    </select>
-                </div>
+                    <section class="note-card">
+                        <h3 class="field-label mb-3">Patient profile</h3>
+                        <div class="section-grid section-grid--two">
+                            <div>
+                                <label class="field-label" for="age">Age (years)</label>
+                                <input type="number" id="age" min="0" max="120" step="1" class="form-input mt-2" placeholder="e.g., 64" required>
+                            </div>
+                            <div>
+                                <label class="field-label" for="liver-disease">Liver disease</label>
+                                <select id="liver-disease" class="form-input mt-2">
+                                    <option value="none">None</option>
+                                    <option value="mild">Mild</option>
+                                    <option value="moderate to severe">Moderate to severe</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label" for="diabetes">Diabetes mellitus</label>
+                                <select id="diabetes" class="form-input mt-2">
+                                    <option value="none or diet-controlled">None / diet-controlled</option>
+                                    <option value="uncomplicated">Uncomplicated</option>
+                                    <option value="end-organ damage">End-organ damage</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label" for="solid-tumor">Solid tumor burden</label>
+                                <select id="solid-tumor" class="form-input mt-2">
+                                    <option value="none">None</option>
+                                    <option value="localized">Localized</option>
+                                    <option value="metastatic">Metastatic</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="callout callout-info">
+                        <p>Each tile represents a Charlson letter. Toggle only those documented within the patient note.</p>
+                    </section>
+
+                    <section class="tile-grid">
+                        <label class="tile-card">
+                            <input type="checkbox" id="mi">
+                            <span class="tile-badge">M</span>
+                            <h3>Myocardial infarction</h3>
+                            <p>History of MI</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="chf">
+                            <span class="tile-badge">C</span>
+                            <h3>Congestive heart failure</h3>
+                            <p>Clinical CHF or EF ≤35%</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="pvd">
+                            <span class="tile-badge">P</span>
+                            <h3>Peripheral vascular disease</h3>
+                            <p>Includes bypass or aneurysm</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="cva">
+                            <span class="tile-badge">S</span>
+                            <h3>Cerebrovascular accident</h3>
+                            <p>Stroke with deficits</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="tia">
+                            <span class="tile-badge">T</span>
+                            <h3>Transient ischemic attack</h3>
+                            <p>History of TIA</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="dementia">
+                            <span class="tile-badge">D</span>
+                            <h3>Dementia</h3>
+                            <p>Including Alzheimer’s</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="copd">
+                            <span class="tile-badge">L</span>
+                            <h3>Chronic lung disease</h3>
+                            <p>Chronic pulmonary disease</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="ctd">
+                            <span class="tile-badge">K</span>
+                            <h3>Connective tissue disease</h3>
+                            <p>RA, SLE, scleroderma</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="pud">
+                            <span class="tile-badge">U</span>
+                            <h3>Peptic ulcer disease</h3>
+                            <p>Active or historical</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="hemiplegia">
+                            <span class="tile-badge">H</span>
+                            <h3>Hemiplegia</h3>
+                            <p>Permanent paresis</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="ckd">
+                            <span class="tile-badge">R</span>
+                            <h3>Renal disease</h3>
+                            <p>Moderate/severe CKD</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="leukemia">
+                            <span class="tile-badge">B</span>
+                            <h3>Leukemia</h3>
+                            <p>Chronic or acute</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="lymphoma">
+                            <span class="tile-badge">Y</span>
+                            <h3>Lymphoma</h3>
+                            <p>Hodgkin or non-Hodgkin</p>
+                        </label>
+                        <label class="tile-card">
+                            <input type="checkbox" id="aids">
+                            <span class="tile-badge">A</span>
+                            <h3>AIDS</h3>
+                            <p>HIV with AIDS-defining illness</p>
+                        </label>
+                    </section>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate CCI">
+                            Calculate CCI
+                        </button>
+                    </div>
+                </form>
             </section>
 
-            <section class="grid md:grid-cols-3 gap-4">
-                <label class="option-pill">
-                    <input type="checkbox" id="mi">
-                    <span>Myocardial infarction</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="chf">
-                    <span>Congestive heart failure</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="pvd">
-                    <span>Peripheral vascular disease</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="cva">
-                    <span>Cerebrovascular accident</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="tia">
-                    <span>History of TIA</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="dementia">
-                    <span>Dementia</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="copd">
-                    <span>Chronic pulmonary disease</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="ctd">
-                    <span>Connective tissue disease</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="pud">
-                    <span>Peptic ulcer disease</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="hemiplegia">
-                    <span>Hemiplegia</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="ckd">
-                    <span>Moderate/severe CKD</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="leukemia">
-                    <span>Leukemia</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="lymphoma">
-                    <span>Lymphoma</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="aids">
-                    <span>AIDS</span>
-                </label>
-            </section>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <h3>Tips</h3>
+                    <ul class="info-list">
+                        <li>Score age separately (1 point per decade ≥ 50).</li>
+                        <li>Tile toggles represent the original Charlson letters.</li>
+                        <li>Metastatic cancer and AIDS carry the highest weights.</li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
-                    Calculate CCI
-                </button>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">CCI</p>
+                <h2>Score</h2>
             </div>
-        </form>
-
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">CCI Result</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Score</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <div class="result-value">
+                <span class="result-unit">points</span>
+                <p id="result-value">—</p>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>

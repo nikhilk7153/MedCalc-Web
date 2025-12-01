@@ -6,68 +6,195 @@
     <title>LDL Calculated</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css" />
+    <style>
+        .metric-board {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            max-width: 100%;
+        }
+        
+        .metric-card {
+            min-height: 180px;
+            padding: 1.5rem;
+        }
+        
+        .field-combo {
+            display: flex;
+            gap: 0.75rem;
+            align-items: stretch;
+        }
+        
+        .combo-input {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .combo-select {
+            min-width: 140px !important;
+            padding: 0.75rem 2.5rem 0.75rem 1rem !important;
+            font-size: 1rem !important;
+            font-weight: 500;
+        }
+        
+        .unit-mode-panel {
+            padding: 1.5rem;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .unit-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        
+        .unit-pill {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 2px solid #e2e8f0;
+            background: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .unit-pill.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .unit-pill:hover:not(.active) {
+            border-color: #94a3b8;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">LDL (Friedewald)</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">LDL (Friedewald)</span>
+            </div>
+            <h1 class="page-title">LDL Calculation Worksheet</h1>
+            <p class="page-subtitle">
+                Calculate LDL cholesterol using the Friedewald equation from lipid panel values.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Required Inputs</p>
+                    <p class="meta-value">Total cholesterol · HDL · Triglycerides</p>
+                </div>
+                <div>
+                    <p class="meta-label">Unit Options</p>
+                    <p class="meta-value">mg/dL · mmol/L</p>
+                </div>
+            </div>
         </header>
 
-        <form id="ldl-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Enter total cholesterol, HDL, and triglycerides.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="ldl-form" class="stacked-form" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span class="badge badge--alert">Action needed</span>
+                            <p id="error-text">Enter total cholesterol, HDL, and triglycerides.</p>
+                        </div>
+                    </div>
 
-            <section class="space-y-4">
-                <div>
-                    <label for="total-chol" class="block text-sm font-medium text-gray-700">Total cholesterol</label>
-                    <div class="field-combo">
-                        <input type="number" id="total-chol" min="0" step="0.1" class="combo-input" placeholder="e.g., 220" required />
-                        <select id="total-chol-unit" class="combo-select">
-                            <option value="mg/dL">mg/dL</option>
-                            <option value="mmol/L">mmol/L</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label for="hdl" class="block text-sm font-medium text-gray-700">HDL cholesterol</label>
-                    <div class="field-combo">
-                        <input type="number" id="hdl" min="0" step="0.1" class="combo-input" placeholder="e.g., 45" required />
-                        <select id="hdl-unit" class="combo-select">
-                            <option value="mg/dL">mg/dL</option>
-                            <option value="mmol/L">mmol/L</option>
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label for="triglycerides" class="block text-sm font-medium text-gray-700">Triglycerides</label>
-                    <div class="field-combo">
-                        <input type="number" id="triglycerides" min="0" step="0.1" class="combo-input" placeholder="e.g., 150" required />
-                        <select id="triglycerides-unit" class="combo-select">
-                            <option value="mg/dL">mg/dL</option>
-                            <option value="mmol/L">mmol/L</option>
-                        </select>
-                    </div>
-                </div>
-            </section>
+                    <section class="unit-mode-panel">
+                        <div>
+                            <p class="field-label mb-1">Preferred units</p>
+                            <p class="helper-text">Applies to every selector but can be overridden per card.</p>
+                        </div>
+                        <div class="unit-toggle" data-unit-toggle>
+                            <button type="button" class="unit-pill active" data-unit-mode="mg/dL">US (mg/dL)</button>
+                            <button type="button" class="unit-pill" data-unit-mode="mmol/L">SI (mmol/L)</button>
+                        </div>
+                    </section>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    <div class="metric-board">
+                        <article class="metric-card" data-metric-card>
+                            <header>
+                                <p class="metric-label">Total cholesterol</p>
+                                <span class="badge badge--outline">Required</span>
+                            </header>
+                            <div class="field-combo mt-2">
+                                <input type="number" id="total-chol" min="0" step="any" class="combo-input" placeholder="e.g., 220" required>
+                                <select id="total-chol-unit" class="combo-select" data-shared-unit>
+                            <option value="mg/dL">mg/dL</option>
+                            <option value="mmol/L">mmol/L</option>
+                        </select>
+                    </div>
+                            <p class="helper-text">Match the lab result exactly; do not convert manually.</p>
+                        </article>
+
+                        <article class="metric-card" data-metric-card>
+                            <header>
+                                <p class="metric-label">HDL cholesterol</p>
+                                <span class="badge badge--outline">Required</span>
+                            </header>
+                            <div class="field-combo mt-2">
+                                <input type="number" id="hdl" min="0" step="any" class="combo-input" placeholder="e.g., 45" required>
+                                <select id="hdl-unit" class="combo-select" data-shared-unit>
+                                    <option value="mg/dL">mg/dL</option>
+                                    <option value="mmol/L">mmol/L</option>
+                                </select>
+                </div>
+                            <p class="helper-text">If HDL is not provided, stop and locate the admission labs.</p>
+                        </article>
+
+                        <article class="metric-card" data-metric-card>
+                            <header>
+                                <p class="metric-label">Triglycerides</p>
+                                <span class="badge badge--outline">Required</span>
+                            </header>
+                            <div class="field-combo mt-2">
+                                <input type="number" id="triglycerides" min="0" step="any" class="combo-input" placeholder="e.g., 150" required>
+                                <select id="triglycerides-unit" class="combo-select" data-shared-unit>
+                            <option value="mg/dL">mg/dL</option>
+                            <option value="mmol/L">mmol/L</option>
+                        </select>
+                            </div>
+                            <p class="helper-text">Friedewald is unreliable if triglycerides ≥ 400 mg/dL.</p>
+                        </article>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate LDL">
                     Calculate LDL
                 </button>
             </div>
         </form>
+            </section>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">LDL Result</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">mg/dL</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <h3>Important Notes</h3>
+                    <ul class="info-list">
+                        <li>Enter values as reported from the lab.</li>
+                        <li>Use the unit toggle to set preferred units.</li>
+                        <li>Formula invalid if triglycerides ≥ 400 mg/dL.</li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">Friedewald result</p>
+                <h2>LDL Cholesterol</h2>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">mg/dL</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -76,6 +203,28 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
+            const unitButtons = document.querySelectorAll('[data-unit-mode]');
+            const sharedUnitSelects = document.querySelectorAll('[data-shared-unit]');
+
+            const applyUnitMode = (unit) => {
+                sharedUnitSelects.forEach((select) => {
+                    const options = Array.from(select.options).map((option) => option.value);
+                    if (options.includes(unit)) {
+                        select.value = unit;
+                    }
+                });
+            };
+
+            unitButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    unitButtons.forEach((other) => other.classList.toggle('active', other === button));
+                    applyUnitMode(button.dataset.unitMode);
+                });
+            });
+
+            if (unitButtons.length) {
+                applyUnitMode(unitButtons[0].dataset.unitMode);
+            }
 
             const collectPayload = () => {
                 const total = parseFloat(document.getElementById('total-chol').value);

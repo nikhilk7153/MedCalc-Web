@@ -6,65 +6,124 @@
     <title>QTc Calculators</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
+    <style>
+        .pill-button {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            background: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .pill-button:hover {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+        .pill-button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-4xl calculator-card">
-        <header class="mb-8 text-center">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900 mt-2">QTc Calculators</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-6xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">QTc suite</span>
+            </div>
+            <h1 class="page-title">QT Interval Correction Studio</h1>
+            <p class="page-subtitle">
+                Capture heart rate and raw QT intervals, select the appropriate correction formula, and review supporting context before submitting the result.
+            </p>
+            <div class="hero-metadata">
+                <div>
+                    <p class="meta-label">Formulas</p>
+                    <p class="meta-value">Bazett · Fridericia · Framingham · Hodges · Rautaharju</p>
+                </div>
+                <div>
+                    <p class="meta-label">Inputs</p>
+                    <p class="meta-value">Heart rate · QT interval</p>
+                </div>
+                <div>
+                    <p class="meta-label">Output</p>
+                    <p class="meta-value">Corrected QT interval (ms)</p>
+                </div>
+            </div>
         </header>
 
-        <form id="qtc-form" class="space-y-8">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Please review the highlighted fields.</span>
-            </div>
+        <div class="split-layout">
+            <section class="layout-primary">
+                <form id="qtc-form" class="space-y-8" novalidate>
+                    <div id="error-message" class="hidden callout callout-error">
+                        <div class="callout-header">
+                            <span class="badge badge--alert">Action needed</span>
+                            <p id="error-text">Please review the highlighted inputs.</p>
+                        </div>
+                    </div>
 
-            <section class="space-y-3">
-                <h2 class="text-lg font-semibold text-gray-800">Formula</h2>
-                <select id="qtc-selector" class="form-input">
-                    <option value="qtc-bazett-calculator">Bazett</option>
-                    <option value="qtc-fridericia-calculator">Fridericia</option>
-                    <option value="qtc-framingham-calculator">Framingham</option>
-                    <option value="qtc-hodges-calculator">Hodges</option>
-                    <option value="qtc-rautaharju-calculator">Rautaharju</option>
-                </select>
-                <p id="qtc-description" class="text-sm text-gray-600">
-                    QTc using Bazett: QT / √(RR) with RR = 60 / heart rate.
-                </p>
+                    <div class="stacked-form">
+                        <div class="field-block">
+                            <label class="field-label">Select QTc formula</label>
+                            <div class="grid md:grid-cols-5 gap-3" id="formula-buttons">
+                                <button type="button" class="pill-button active" data-formula="qtc-bazett-calculator">Bazett</button>
+                                <button type="button" class="pill-button" data-formula="qtc-fridericia-calculator">Fridericia</button>
+                                <button type="button" class="pill-button" data-formula="qtc-framingham-calculator">Framingham</button>
+                                <button type="button" class="pill-button" data-formula="qtc-hodges-calculator">Hodges</button>
+                                <button type="button" class="pill-button" data-formula="qtc-rautaharju-calculator">Rautaharju</button>
+                            </div>
+                            <input type="hidden" id="qtc-selector" value="qtc-bazett-calculator">
+                        </div>
+
+                        <div class="option-board">
+                            <div class="field-block">
+                                <label for="heart-rate" class="field-label">Heart rate (beats/min)</label>
+                                <input type="number" id="heart-rate" min="1" step="1" class="form-input" placeholder="e.g., 72" required>
+                            </div>
+                            <div class="field-block">
+                                <label for="qt-interval" class="field-label">QT interval (msec)</label>
+                                <input type="number" id="qt-interval" min="1" step="1" class="form-input" placeholder="e.g., 410" required>
+                                <p class="helper-text">Use the raw interval; the calculator converts automatically.</p>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate QTc">
+                                Calculate QTc
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </section>
 
-            <section class="space-y-4">
-                <h2 class="text-lg font-semibold text-gray-800 border-b pb-2">Inputs</h2>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="heart-rate" class="block text-sm font-medium text-gray-700">Heart Rate (beats/min)</label>
-                        <input type="number" id="heart-rate" class="form-input" min="1" step="1" placeholder="e.g., 70" required>
-                    </div>
-                    <div>
-                        <label for="qt-interval" class="block text-sm font-medium text-gray-700">QT Interval (msec)</label>
-                        <input type="number" id="qt-interval" class="form-input" min="1" step="1" placeholder="e.g., 420" required>
-                        <p class="helper-text">Enter raw QT interval in milliseconds.</p>
-                    </div>
+            <aside class="layout-secondary sticky-panel">
+                <div class="sidebar-card">
+                    <h3>Instructions</h3>
+                    <ul class="info-list">
+                        <li>Select the appropriate QTc formula.</li>
+                        <li>Enter heart rate and QT interval values.</li>
+                        <li>Click Calculate QTc to get the result.</li>
+                    </ul>
                 </div>
-            </section>
+            </aside>
+        </div>
 
-            <div class="pt-4">
-                <button id="calculate-btn" type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition" data-label="Calculate QTc">
-                    Calculate QTc
-                </button>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral" id="result-title">QTc Result</p>
+                <h2>Corrected QT Interval</h2>
+                <p id="result-meta" class="result-subtitle"></p>
             </div>
-        </form>
-
-        <section id="result-container" class="hidden mt-10 rounded-2xl border p-6">
-            <h2 id="result-title" class="text-xl font-semibold text-center text-gray-900">Result</h2>
-            <p id="result-meta" class="text-center text-sm text-gray-500 mt-1"></p>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Corrected QT Interval (ms)</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+            <div class="result-value">
+                <span class="result-unit">ms</span>
+                <p id="result-value">—</p>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -81,7 +140,6 @@
             };
 
             const selector = document.getElementById('qtc-selector');
-            const descriptionEl = document.getElementById('qtc-description');
             const resultContainer = document.getElementById('result-container');
             const resultTitle = document.getElementById('result-title');
             const resultMeta = document.getElementById('result-meta');
@@ -92,17 +150,21 @@
             const apiBase = (window.CALCULATOR_API_BASE || '').replace(/\/$/, '');
             let currentSlug = selector.value;
 
-            const updateDescription = () => {
-                descriptionEl.textContent = formulas[currentSlug] || '';
-                resultContainer.classList.add('hidden');
-            };
-
-            selector.addEventListener('change', () => {
-                currentSlug = selector.value;
-                updateDescription();
+            // Handle formula button clicks
+            const formulaButtons = document.querySelectorAll('#formula-buttons button');
+            formulaButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    formulaButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    // Update the selector value
+                    currentSlug = button.dataset.formula;
+                    selector.value = currentSlug;
+                    // Hide result when formula changes
+                    resultContainer.classList.add('hidden');
+                });
             });
-
-            updateDescription();
 
             const collectPayload = () => {
                 const heartRate = parseFloat(document.getElementById('heart-rate').value);
@@ -121,7 +183,8 @@
             };
 
             const renderResult = (result) => {
-                resultTitle.textContent = selector.options[selector.selectedIndex].text;
+                const activeButton = document.querySelector('#formula-buttons button.active');
+                resultTitle.textContent = activeButton ? activeButton.textContent : 'QTc Result';
                 resultMeta.textContent = formulas[currentSlug] || '';
 
                 const value = result.answer ?? result.raw_score ?? result.score;

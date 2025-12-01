@@ -7,57 +7,126 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./static/css/calculator.css">
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-    <div class="mx-auto w-full max-w-3xl calculator-card space-y-8">
-        <header class="text-center space-y-2">
-            <p class="text-xs uppercase tracking-widest text-blue-600 font-semibold">MedCalc-Web</p>
-            <h1 class="text-3xl font-bold text-gray-900">FeverPAIN Score</h1>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+    <div class="calculator-shell mx-auto w-full max-w-4xl space-y-10">
+        <header class="page-hero">
+            <div class="hero-pills">
+                <span class="badge badge--outline">Benchmark mode</span>
+                <span class="badge badge--neutral">FeverPAIN</span>
+            </div>
+            <h1 class="page-title">F-E-V-E-R Timeline</h1>
+            <p class="page-subtitle">
+                Walk across the mnemonic strip. Flip the switches only when the finding is explicitly documented.
+            </p>
+            <div class="hero-metadata">
+                <div><p class="meta-label">Inputs</p><p class="meta-value">5 checkpoints</p></div>
+                <div><p class="meta-label">Output</p><p class="meta-value">0–5 score</p></div>
+                <div><p class="meta-label">Use</p><p class="meta-value">Strep risk triage</p></div>
+            </div>
         </header>
 
-        <form id="feverpain-form" class="space-y-6">
-            <div id="error-message" class="hidden border border-red-300 bg-red-50 text-red-700 text-sm rounded-lg p-3">
-                <span id="error-text">Toggle the findings observed in the patient.</span>
+        <form id="feverpain-form" class="stacked-form" novalidate>
+            <div id="error-message" class="hidden callout callout-error">
+                <div class="callout-header">
+                    <span id="error-text">Toggle the findings observed in the patient.</span>
+                </div>
             </div>
 
-            <section class="grid gap-4">
-                <label class="option-pill">
-                    <input type="checkbox" id="fever">
-                    <span>Fever in the past 24 hours</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="cough-absent">
-                    <span>Absence of cough or coryza</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="symptom-onset">
-                    <span>Symptom onset ≤ 3 days</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="purulent-tonsils">
-                    <span>Purulent tonsils</span>
-                </label>
-                <label class="option-pill">
-                    <input type="checkbox" id="tonsil-inflammation">
-                    <span>Severe tonsil inflammation</span>
-                </label>
-            </section>
+            <ol class="stepper">
+                <li class="step-card">
+                    <div class="step-header">
+                        <span class="step-index">F</span>
+                        <div>
+                            <h3>Fever 24 h</h3>
+                            <p class="helper-text">Objectively measured temp ≥ 38°C or documented fever.</p>
+                        </div>
+                    </div>
+                    <label class="option-pill mt-4">
+                        <input type="checkbox" id="fever">
+                        <span>Fever within the past day</span>
+                    </label>
+                </li>
+                <li class="step-card">
+                    <div class="step-header">
+                        <span class="step-index">E</span>
+                        <div>
+                            <h3>Exudate/purulence</h3>
+                            <p class="helper-text">Either purulent tonsils or marked tonsillar erythema.</p>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-3 mt-4">
+                        <label class="option-pill">
+                            <input type="checkbox" id="purulent-tonsils">
+                            <span>Purulent tonsils</span>
+                        </label>
+                        <label class="option-pill">
+                            <input type="checkbox" id="tonsil-inflammation">
+                            <span>Severe tonsil inflammation</span>
+                        </label>
+                    </div>
+                </li>
+                <li class="step-card">
+                    <div class="step-header">
+                        <span class="step-index">V</span>
+                        <div>
+                            <h3>Very rapid onset</h3>
+                            <p class="helper-text">Symptoms began ≤ 3 days prior to presentation.</p>
+                        </div>
+                    </div>
+                    <label class="option-pill mt-4">
+                        <input type="checkbox" id="symptom-onset">
+                        <span>Onset ≤ 72 hours</span>
+                    </label>
+                </li>
+                <li class="step-card">
+                    <div class="step-header">
+                        <span class="step-index">E</span>
+                        <div>
+                            <h3>Ent symptoms lacking</h3>
+                            <p class="helper-text">Absence of cough or coryza.</p>
+                        </div>
+                    </div>
+                    <label class="option-pill mt-4">
+                        <input type="checkbox" id="cough-absent">
+                        <span>No cough/coryza noted</span>
+                    </label>
+                </li>
+                <li class="step-card">
+                    <div class="step-header">
+                        <span class="step-index">R</span>
+                        <div>
+                            <h3>Recent feverish exposure</h3>
+                            <p class="helper-text">Subjective feverishness or close contact with febrile illness.</p>
+                        </div>
+                    </div>
+                    <label class="option-pill mt-4">
+                        <input type="checkbox" id="fever-secondary">
+                        <span>Subjective fever/contact</span>
+                    </label>
+                </li>
+            </ol>
 
-            <div class="pt-2">
-                <button id="calculate-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+            <p class="helper-text text-center">Score 1 point for every confirmed item. Leave unchecked if the chart is silent.</p>
+
+            <div class="form-actions">
+                <button id="calculate-btn" type="submit" class="primary-button" data-label="Calculate FeverPAIN">
                     Calculate FeverPAIN
                 </button>
             </div>
         </form>
 
-        <section id="result-container" class="hidden rounded-2xl border p-6">
-            <h2 class="text-xl font-semibold text-center text-gray-900">Score</h2>
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-500">Total</p>
-                <p id="result-value" class="text-4xl font-bold text-gray-900 mt-1">—</p>
+        <section id="result-container" class="result-panel hidden">
+            <div class="result-header">
+                <p class="badge badge--neutral">FeverPAIN</p>
+                <h2>Score</h2>
             </div>
-            <details id="result-explanation-panel" class="mt-6 rounded-xl bg-white/70 border border-gray-200 p-4 text-sm text-gray-700 hidden">
-                <summary class="cursor-pointer font-semibold text-gray-900">View explanation</summary>
-                <pre id="result-explanation" class="mt-3 whitespace-pre-wrap text-gray-700"></pre>
+            <div class="result-value">
+                <span class="result-unit">points</span>
+                <p id="result-value">—</p>
+            </div>
+            <details id="result-explanation-panel" class="result-details hidden">
+                <summary>View explanation</summary>
+                <pre id="result-explanation" class="whitespace-pre-wrap"></pre>
             </details>
         </section>
     </div>
@@ -73,6 +142,7 @@
                 'Symptom onset <=3 days': document.getElementById('symptom-onset').checked,
                 'Purulent tonsils': document.getElementById('purulent-tonsils').checked,
                 'Severe tonsil inflammation': document.getElementById('tonsil-inflammation').checked,
+                'Subjective fever/contact': document.getElementById('fever-secondary').checked,
             });
 
             const renderResult = (result) => {
