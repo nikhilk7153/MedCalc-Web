@@ -5,6 +5,7 @@ import asyncio
 import csv
 import json
 import os
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -118,13 +119,7 @@ async def main():
     }
     results = []
     
-    # Create single browser instance
-    print("🌐 Starting browser (visible mode)...")
-    browser = Browser(
-        headless=False,  # Show browser window
-        window_size={'width': 1400, 'height': 1000}
-    )
-    
+    # Create LLM instance (reused)
     llm = ChatOpenAI(model="gpt-5-mini")
     
     # Create timestamp for this run
@@ -172,10 +167,27 @@ async def main():
             f"3. Fill out the calculator form using the values you extracted from the note",
             f"4. Click the Calculate button",
             f"5. Extract the numerical result from the page",
-            f"6. Return ONLY the final numerical answer without any units or explanation"
+            f"",
+            f"IMPORTANT - Final Response Format:",
+            f'When you complete the task, your final response must be ONLY a JSON object in this exact format:',
+            f'{{"answer": <numerical_value>}}',
+            f"",
+            f"Examples:",
+            f'- {{"answer": 83.94}}',
+            f'- {{"answer": 12}}',
+            f'- {{"answer": 2.5}}',
+            f"",
+            f"Do NOT include units, explanations, or any other text. ONLY the JSON with the numerical answer."
         ]
         
         task = "\n".join(task_parts)
+        
+        # Create fresh browser for this test
+        print(f"  🌐 Starting fresh browser...")
+        browser = Browser(
+            headless=False,  # Show browser window
+            window_size={'width': 1400, 'height': 1000}
+        )
         
         try:
             agent = Agent(
@@ -208,30 +220,72 @@ async def main():
             except Exception as e:
                 print(f"  ⚠️ Could not save screenshot: {str(e)[:50]}")
             
+            # Parse JSON response from agent
+            agent_answer = None
+            final_json = None
+            
+            try:
+                # Try to parse as JSON first
+                result_str = str(result).strip()
+                
+                # Extract JSON if embedded in text
+                json_match = re.search(r'\{[^}]*"answer"[^}]*\}', result_str)
+                if json_match:
+                    final_json = json.loads(json_match.group())
+                    agent_answer = final_json.get("answer")
+                else:
+                    # Try parsing entire result as JSON
+                    final_json = json.loads(result_str)
+                    agent_answer = final_json.get("answer")
+            except (json.JSONDecodeError, AttributeError):
+                # Fallback: extract number from text
+                try:
+                    numbers = re.findall(r'-?\d+\.?\d*', result_str)
+                    if numbers:
+                        agent_answer = float(numbers[0])
+                except:
+                    agent_answer = result_str
+            
             # Compare results
             try:
-                agent_num = float(str(result).strip())
+                agent_num = float(agent_answer) if agent_answer is not None else None
                 truth_num = float(ground_truth)
-                tolerance = 0.05 * abs(truth_num)
-                is_correct = abs(agent_num - truth_num) <= tolerance
                 
-                if is_correct:
-                    print(f"  ✅ PASSED - Got {agent_num}, expected {truth_num}")
-                    stats["passed"] += 1
-                else:
-                    print(f"  ❌ FAILED - Got {agent_num}, expected {truth_num}")
+                if agent_num is None:
+                    print(f"  ❌ FAILED - No answer extracted from: {str(result)[:50]}")
                     stats["failed"] += 1
+                    results.append({
+                        "calculator": calculator_name,
+                        "status": "failed",
+                        "ground_truth": truth_num,
+                        "result": str(result),
+                        "agent_json": final_json,
+                        "steps": history.number_of_steps(),
+                        "screenshot": str(screenshot_path) if screenshot_path else None
+                    })
+                else:
+                    tolerance = 0.05 * abs(truth_num)
+                    is_correct = abs(agent_num - truth_num) <= tolerance
+                    
+                    if is_correct:
+                        print(f"  ✅ PASSED - Got {agent_num}, expected {truth_num}")
+                        stats["passed"] += 1
+                    else:
+                        print(f"  ❌ FAILED - Got {agent_num}, expected {truth_num}")
+                        stats["failed"] += 1
+                    
+                    results.append({
+                        "calculator": calculator_name,
+                        "status": "passed" if is_correct else "failed",
+                        "ground_truth": truth_num,
+                        "result": agent_num,
+                        "agent_json": final_json,
+                        "raw_response": str(result),
+                        "steps": history.number_of_steps(),
+                        "screenshot": str(screenshot_path) if screenshot_path else None
+                    })
                 
-                results.append({
-                    "calculator": calculator_name,
-                    "status": "passed" if is_correct else "failed",
-                    "ground_truth": truth_num,
-                    "result": agent_num,
-                    "steps": history.number_of_steps(),
-                    "screenshot": str(screenshot_path) if screenshot_path else None
-                })
-                
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as e:
                 print(f"  ❌ FAILED - Could not parse result: {result}")
                 stats["failed"] += 1
                 results.append({
@@ -239,6 +293,7 @@ async def main():
                     "status": "failed",
                     "ground_truth": ground_truth,
                     "result": str(result),
+                    "agent_json": final_json,
                     "steps": history.number_of_steps(),
                     "screenshot": str(screenshot_path) if screenshot_path else None
                 })
@@ -254,6 +309,20 @@ async def main():
                 "status": "error",
                 "error": str(e)
             })
+        
+        finally:
+            # Always close and cleanup browser after each test
+            try:
+                if 'browser' in locals():
+                    print(f"  🔄 Closing browser...")
+                    if hasattr(browser, 'close'):
+                        await browser.close()
+                    elif hasattr(browser, 'context') and hasattr(browser.context, 'close'):
+                        await browser.context.close()
+                    # Small delay to ensure cleanup
+                    await asyncio.sleep(1)
+            except Exception as cleanup_error:
+                print(f"  ⚠️ Cleanup warning: {str(cleanup_error)[:50]}")
     
     # Save results
     results_file = f"benchmark_results_simple_{timestamp}.json"
