@@ -117,19 +117,7 @@
                         </select>
                     </div>
                 </div>
-                            <div class="field-block">
-                                <label for="lab-time" class="field-label">Sample timestamp</label>
-                                <input type="datetime-local" id="lab-time" class="form-input" required>
-                    </div>
                 </div>
-                        <div class="field-block">
-                            <label for="lab-name" class="field-label">Laboratory (optional)</label>
-                            <input type="text" id="lab-name" class="form-input" placeholder="e.g., Hospital Core Lab">
-                        </div>
-                        <div class="field-block note-card">
-                            <h3>Reminder</h3>
-                            <p>No manual conversions; use the selector to specify mg/dL or µmol/L.</p>
-                        </div>
             </section>
 
                     <div class="form-actions">
@@ -202,16 +190,11 @@
                 const creatinine = ensureNumber('creatinine', 'Serum creatinine');
                 if (creatinine <= 0) throw new Error('Serum creatinine must be positive.');
 
-                const labTime = document.getElementById('lab-time').value;
-                if (!labTime) throw new Error('Sample timestamp');
-
                 return {
                     age: [age, 'years'],
                     sex: sexRadio.value === 'male' ? 'Male' : 'Female',
                     Race: raceRadio.value,
-                    creatinine: [creatinine, document.getElementById('creatinine-unit').value],
-                    lab_time: labTime,
-                    lab_name: document.getElementById('lab-name').value || null,
+                    creatinine: [creatinine, document.getElementById('creatinine-unit').value]
                 };
             };
 
