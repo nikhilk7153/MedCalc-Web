@@ -14,19 +14,14 @@
                 <span class="badge badge--outline">Benchmark mode</span>
                 <span class="badge badge--neutral">MAP</span>
             </div>
-            <h1 class="page-title">Mean Arterial Pressure Worksheet</h1>
+            <h1 class="page-title">Mean Arterial Pressure Calculator</h1>
             <p class="page-subtitle">
-                Collect systolic/diastolic blood pressures directly from the chart, confirm the measurement method, and
-                document when it was recorded. Tabs help keep vitals and meta-data separate.
+                Calculate mean arterial pressure from systolic and diastolic blood pressure readings
             </p>
             <div class="hero-metadata">
                 <div>
-                    <p class="meta-label">Panels</p>
-                    <p class="meta-value">3 steps</p>
-                </div>
-                <div>
                     <p class="meta-label">Inputs</p>
-                    <p class="meta-value">SBP · DBP · Source · Context</p>
+                    <p class="meta-value">SBP · DBP</p>
                 </div>
                 <div>
                     <p class="meta-label">Output</p>
@@ -45,116 +40,21 @@
                         </div>
                     </div>
 
-                    <div class="callout callout-info">
-                        <div class="callout-header">
-                            <span class="badge badge--neutral">Checklist</span>
-                            <h2>Use the most recent admission vitals</h2>
-                        </div>
-                        <ul class="callout-list">
-                            <li>Copy values exactly—no rounding or conversions.</li>
-                            <li>Record whether the measurement was invasive or non-invasive.</li>
-                            <li>Note the care setting (ED, ICU, ward) and timestamp.</li>
-                        </ul>
-                    </div>
-
-                    <div class="tab-list" role="tablist" aria-label="Vitals flow">
-                        <button type="button" class="tab-button" data-tab-target="tab-pressures" role="tab" aria-selected="true">
-                            <span>1. Pressures</span>
-                            <span class="badge">SBP + DBP</span>
-                        </button>
-                        <button type="button" class="tab-button" data-tab-target="tab-method" role="tab" aria-selected="false">
-                            <span>2. Method</span>
-                            <span class="badge">Source & modality</span>
-                        </button>
-                        <button type="button" class="tab-button" data-tab-target="tab-context" role="tab" aria-selected="false">
-                            <span>3. Context</span>
-                            <span class="badge">Location & time</span>
-                        </button>
-                    </div>
-
-                    <section id="tab-pressures" class="tab-panel active" role="tabpanel">
-                        <div class="panel-heading">
-                            <p class="panel-eyebrow">Step 1</p>
-                            <h2>Systolic and diastolic pressures</h2>
-                            <p class="panel-description">Enter the paired systolic and diastolic readings in mm Hg.</p>
-                        </div>
+                    <div class="note-card">
+                        <h3 class="field-label mb-4">Blood Pressure</h3>
                         <div class="section-grid section-grid--two">
                             <div class="field-block">
-                                <label for="sbp" class="field-label">Systolic BP (mm Hg)</label>
+                                <label for="sbp" class="field-label mb-2">Systolic BP</label>
                                 <input type="number" id="sbp" min="1" max="400" step="1" class="form-input" placeholder="e.g., 124" required>
+                                <p class="helper-text mt-1">Enter value in mm Hg</p>
                             </div>
                             <div class="field-block">
-                                <label for="dbp" class="field-label">Diastolic BP (mm Hg)</label>
+                                <label for="dbp" class="field-label mb-2">Diastolic BP</label>
                                 <input type="number" id="dbp" min="1" max="250" step="1" class="form-input" placeholder="e.g., 72" required>
+                                <p class="helper-text mt-1">Enter value in mm Hg</p>
                             </div>
                         </div>
-                        <div class="field-block">
-                            <label for="pulse-pressure" class="field-label">Optional: Pulse pressure (auto)</label>
-                            <input type="text" id="pulse-pressure" class="form-input" placeholder="Calculated after entering SBP/DBP" readonly>
-                            <p class="helper-text">Used as a quick reasonableness check.</p>
-                        </div>
-                    </section>
-
-                    <section id="tab-method" class="tab-panel" role="tabpanel" hidden>
-                        <div class="panel-heading">
-                            <p class="panel-eyebrow">Step 2</p>
-                            <h2>Measurement method</h2>
-                            <p class="panel-description">Document how the blood pressure was obtained.</p>
-                        </div>
-                        <div class="section-grid section-grid--two">
-                            <div class="field-block">
-                                <label for="measurement-source" class="field-label">Source</label>
-                                <select id="measurement-source" class="form-input" required>
-                                    <option value="" disabled selected>Select source</option>
-                                    <option value="admission-vitals">Admission vitals</option>
-                                    <option value="icu-monitor">ICU monitor</option>
-                                    <option value="ed-triage">ED triage</option>
-                                    <option value="ward-nurse">Ward nursing documentation</option>
-                                </select>
-                            </div>
-                            <div class="field-block">
-                                <span class="field-label">Modality</span>
-                                <div class="radio-toggle mt-1">
-                                    <input type="radio" id="method-non-invasive" name="method" value="non-invasive" required>
-                                    <label for="method-non-invasive">Cuff</label>
-                                    <input type="radio" id="method-invasive" name="method" value="invasive">
-                                    <label for="method-invasive">Arterial line</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="field-block note-card">
-                            <h3>Reminder</h3>
-                            <p>Enter the values exactly as charted—do not attempt manual conversions between mm Hg and other units.</p>
-                        </div>
-                    </section>
-
-                    <section id="tab-context" class="tab-panel" role="tabpanel" hidden>
-                        <div class="panel-heading">
-                            <p class="panel-eyebrow">Step 3</p>
-                            <h2>Clinical context</h2>
-                            <p class="panel-description">Log when and where the measurement occurred.</p>
-                        </div>
-                        <div class="section-grid section-grid--two">
-                            <div class="field-block">
-                                <label for="care-setting" class="field-label">Care setting</label>
-                                <select id="care-setting" class="form-input" required>
-                                    <option value="" disabled selected>Select setting</option>
-                                    <option value="ed">Emergency department</option>
-                                    <option value="icu">ICU</option>
-                                    <option value="ward">Inpatient ward</option>
-                                    <option value="clinic">Clinic / outpatient</option>
-                                </select>
-                            </div>
-                            <div class="field-block">
-                                <label for="measurement-time" class="field-label">Timestamp</label>
-                                <input type="datetime-local" id="measurement-time" class="form-input" required>
-                            </div>
-                        </div>
-                        <div class="field-block">
-                            <label class="field-label" for="notes">Optional note</label>
-                            <textarea id="notes" class="form-input" placeholder="e.g., Patient supine on room air."></textarea>
-                </div>
-            </section>
+                    </div>
 
                     <div class="form-actions">
                         <button id="calculate-btn" type="submit" class="primary-button" data-label="Compute MAP">
@@ -237,26 +137,9 @@
                 const dbp = ensureNumber('dbp', 'Diastolic BP');
                 if (dbp >= sbp) throw new Error('Systolic must exceed diastolic pressure.');
 
-                const methodRadio = document.querySelector('input[name="method"]:checked');
-                if (!methodRadio) throw new Error('Measurement method');
-
-                const source = document.getElementById('measurement-source').value;
-                if (!source) throw new Error('Measurement source');
-
-                const setting = document.getElementById('care-setting').value;
-                if (!setting) throw new Error('Care setting');
-
-                const timestamp = document.getElementById('measurement-time').value;
-                if (!timestamp) throw new Error('Timestamp');
-
                 return {
                     sys_bp: [sbp, 'mm Hg'],
-                    dia_bp: [dbp, 'mm Hg'],
-                    measurement_source: source,
-                    measurement_method: methodRadio.value,
-                    care_setting: setting,
-                    measurement_time: timestamp,
-                    note: document.getElementById('notes').value || null,
+                    dia_bp: [dbp, 'mm Hg']
                 };
             };
 
@@ -274,62 +157,6 @@
 
                 resultContainer.classList.remove('hidden');
             };
-
-            const togglePanelFields = (panel, enable) => {
-                const fields = panel.querySelectorAll('input, select, textarea, button');
-                fields.forEach((field) => {
-                    if (enable) {
-                        if (field.dataset.requiredBackup === 'true') {
-                            field.setAttribute('required', 'required');
-                        }
-                        field.disabled = false;
-                    } else {
-                        if (field.hasAttribute('required')) {
-                            field.dataset.requiredBackup = 'true';
-                        }
-                        field.removeAttribute('required');
-                        field.disabled = true;
-                    }
-                });
-            };
-
-            const initTabs = () => {
-                const buttons = Array.from(document.querySelectorAll('.tab-button'));
-                const panels = Array.from(document.querySelectorAll('.tab-panel'));
-                if (!buttons.length || !panels.length) return;
-
-                const setActive = (targetId) => {
-                    panels.forEach((panel) => {
-                        const isActive = panel.id === targetId;
-                        panel.hidden = !isActive;
-                        panel.classList.toggle('active', isActive);
-                        panel.setAttribute('aria-hidden', String(!isActive));
-                        togglePanelFields(panel, isActive);
-                    });
-
-                    buttons.forEach((button) => {
-                        const isActive = button.dataset.tabTarget === targetId;
-                        button.setAttribute('aria-selected', String(isActive));
-                        button.classList.toggle('active', isActive);
-                    });
-                };
-
-                panels.forEach((panel, index) => {
-                    const isInitiallyActive = index === 0;
-                    if (!isInitiallyActive) {
-                        togglePanelFields(panel, false);
-                        panel.hidden = true;
-                    }
-                });
-
-                buttons.forEach((button) => {
-                    button.addEventListener('click', () => setActive(button.dataset.tabTarget));
-                });
-
-                setActive(buttons[0].dataset.tabTarget);
-            };
-
-            initTabs();
 
             CalculatorPage.init({
                 formId: 'map-form',

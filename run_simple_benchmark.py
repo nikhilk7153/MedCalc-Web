@@ -184,9 +184,16 @@ async def main():
         
         # Create fresh browser for this test
         print(f"  🌐 Starting fresh browser...")
-        browser = Browser(
+        from browser_use.browser.profile import BrowserProfile
+        
+        profile = BrowserProfile(
             headless=False,  # Show browser window
-            window_size={'width': 1400, 'height': 1000}
+            window_size={'width': 1400, 'height': 1200},
+            screenshot_after_each_action=True  # Take screenshot after every action
+        )
+        
+        browser = Browser(
+            browser_profile=profile
         )
         
         try:
@@ -203,22 +210,25 @@ async def main():
             history = await agent.run(max_steps=30)
             result = history.final_result()
             
-            # Save final screenshot
-            screenshot_path = None
+            # Save all screenshots from this test
+            screenshot_paths = []
             try:
-                # Get screenshots from history
+                # Get all screenshots from history
                 screenshots = history.screenshot_paths()
                 if screenshots:
-                    # Copy the last screenshot to our directory
-                    last_screenshot = screenshots[-1]
-                    if os.path.exists(last_screenshot):
-                        safe_name = calculator_name.replace('/', '-').replace(' ', '_')[:50]
-                        screenshot_filename = f"{i:03d}_{safe_name}_{timestamp}.png"
-                        screenshot_path = SCREENSHOT_DIR / screenshot_filename
-                        shutil.copy2(last_screenshot, screenshot_path)
-                        print(f"  📸 Screenshot saved: {screenshot_path.name}")
+                    print(f"  📸 Saving {len(screenshots)} screenshots...")
+                    safe_name = calculator_name.replace('/', '-').replace(' ', '_')[:50]
+                    
+                    for idx, screenshot in enumerate(screenshots):
+                        if os.path.exists(screenshot):
+                            screenshot_filename = f"{i:03d}_{safe_name}_step{idx+1}_{timestamp}.png"
+                            screenshot_dest = SCREENSHOT_DIR / screenshot_filename
+                            shutil.copy2(screenshot, screenshot_dest)
+                            screenshot_paths.append(str(screenshot_dest))
+                    
+                    print(f"     Saved to: {SCREENSHOT_DIR}/")
             except Exception as e:
-                print(f"  ⚠️ Could not save screenshot: {str(e)[:50]}")
+                print(f"  ⚠️ Could not save screenshots: {str(e)[:50]}")
             
             # Parse JSON response from agent
             agent_answer = None
@@ -261,7 +271,7 @@ async def main():
                         "result": str(result),
                         "agent_json": final_json,
                         "steps": history.number_of_steps(),
-                        "screenshot": str(screenshot_path) if screenshot_path else None
+                        "screenshots": screenshot_paths
                     })
                 else:
                     tolerance = 0.05 * abs(truth_num)
@@ -282,7 +292,7 @@ async def main():
                         "agent_json": final_json,
                         "raw_response": str(result),
                         "steps": history.number_of_steps(),
-                        "screenshot": str(screenshot_path) if screenshot_path else None
+                        "screenshots": screenshot_paths
                     })
                 
             except (ValueError, TypeError) as e:
@@ -295,7 +305,7 @@ async def main():
                     "result": str(result),
                     "agent_json": final_json,
                     "steps": history.number_of_steps(),
-                    "screenshot": str(screenshot_path) if screenshot_path else None
+                    "screenshots": screenshot_paths
                 })
             
             stats["total"] += 1
@@ -307,7 +317,8 @@ async def main():
             results.append({
                 "calculator": calculator_name,
                 "status": "error",
-                "error": str(e)
+                "error": str(e),
+                "screenshots": []
             })
         
         finally:
