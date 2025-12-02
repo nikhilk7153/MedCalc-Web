@@ -153,7 +153,7 @@ async def main():
         
         # Create task with patient note - LLM must extract entities itself
         task_parts = [
-            f"You are a medical AI assistant.",
+            f"You are a medical AI assistant testing a web calculator.",
             f"",
             f"PATIENT NOTE:",
             f"{patient_note}",
@@ -161,23 +161,28 @@ async def main():
             f"QUESTION:",
             f"{question}",
             f"",
+            f"CRITICAL RULES:",
+            f"DO NOT calculate or compute the answer yourself, you MUST use the web calculator to get the answer.",
+            f"Your answer will be marked as incorrect if you do this otherwise.",
+            f"",
             f"TASK:",
             f"1. Navigate to {url}",
-            f"2. Read the patient note carefully and extract the relevant clinical values",
-            f"3. Fill out the calculator form using the values you extracted from the note",
-            f"4. Click the Calculate button",
-            f"5. Extract the numerical result from the page",
+            f"2. Read the patient note and extract the relevant clinical values",
+            f"3. Fill out the ENTIRE calculator form with the values from the note",
+            f"4. Click the Calculate button on the webpage",
+            f"5. Wait for the result to appear on the page",
+            f"6. Extract ONLY the numerical result that the CALCULATOR computed (not your own calculation)",
             f"",
             f"IMPORTANT - Final Response Format:",
-            f'When you complete the task, your final response must be ONLY a JSON object in this exact format:',
-            f'{{"answer": <numerical_value>}}',
+            f'After the calculator displays its result, return ONLY this JSON:',
+            f'{{"answer": <number_from_calculator>}}',
             f"",
             f"Examples:",
             f'- {{"answer": 83.94}}',
             f'- {{"answer": 12}}',
             f'- {{"answer": 2.5}}',
             f"",
-            f"Do NOT include units, explanations, or any other text. ONLY the JSON with the numerical answer."
+            f"The answer MUST be the value the web calculator computed, NOT a value you calculated yourself."
         ]
         
         task = "\n".join(task_parts)
@@ -203,24 +208,22 @@ async def main():
             history = await agent.run(max_steps=30)
             result = history.final_result()
             
-            # Take full-page screenshot after test completes
+            # Take webpage screenshot after test completes
             screenshot_path = None
             try:
-                # Take screenshot of current page state
+                await asyncio.sleep(2)  # Wait for result to display
+                
                 safe_name = calculator_name.replace('/', '-').replace(' ', '_')[:50]
                 screenshot_filename = f"{i:03d}_{safe_name}_{timestamp}.png"
                 screenshot_path = SCREENSHOT_DIR / screenshot_filename
                 
-                # Get browser session and take full-page screenshot
-                if hasattr(browser, 'session'):
-                    screenshot_data = await browser.session.take_screenshot(full_page=True)
-                    with open(screenshot_path, 'wb') as f:
-                        f.write(screenshot_data)
-                    print(f"  📸 Full-page screenshot saved: {screenshot_path.name}")
-                else:
-                    print(f"  ⚠️ Could not access browser session for screenshot")
+                # Access Playwright page through browser session
+                page = browser.session.context.pages[0]
+                await page.screenshot(path=str(screenshot_path), full_page=True)
+                    
+                print(f"  📸 Screenshot: {screenshot_path.name}")
             except Exception as e:
-                print(f"  ⚠️ Could not save screenshot: {str(e)[:80]}")
+                print(f"  ⚠️ Screenshot error: {str(e)[:80]}")
             
             # Parse JSON response from agent
             agent_answer = None
@@ -256,15 +259,15 @@ async def main():
                 if agent_num is None:
                     print(f"  ❌ FAILED - No answer extracted from: {str(result)[:50]}")
                     stats["failed"] += 1
-                results.append({
-                    "calculator": calculator_name,
-                    "status": "failed",
-                    "ground_truth": truth_num,
-                    "result": str(result),
-                    "agent_json": final_json,
-                    "steps": history.number_of_steps(),
-                    "screenshot": str(screenshot_path) if screenshot_path else None
-                })
+                    results.append({
+                        "calculator": calculator_name,
+                        "status": "failed",
+                        "ground_truth": truth_num,
+                        "result": str(result),
+                        "agent_json": final_json,
+                        "steps": history.number_of_steps(),
+                        "screenshot": str(screenshot_path) if screenshot_path else None
+                    })
                 else:
                     tolerance = 0.05 * abs(truth_num)
                     is_correct = abs(agent_num - truth_num) <= tolerance
@@ -297,7 +300,7 @@ async def main():
                     "result": str(result),
                     "agent_json": final_json,
                     "steps": history.number_of_steps(),
-                    "screenshots": screenshot_paths
+                    "screenshot": str(screenshot_path) if screenshot_path else None
                 })
             
             stats["total"] += 1
