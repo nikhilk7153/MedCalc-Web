@@ -137,14 +137,7 @@ async def main():
             stats["skipped"] += 1
             continue
         
-        # Parse entities
-        try:
-            entities = eval(row["Relevant Entities"])
-        except Exception as e:
-            print(f"  ⚠️ ERROR - Failed to parse entities: {str(e)}")
-            stats["errors"] += 1
-            stats["total"] += 1
-            continue
+     
         
         url = f"{BASE_URL}/{html_file}"
         ground_truth = row["Ground Truth Answer"]
@@ -208,7 +201,7 @@ async def main():
             history = await agent.run(max_steps=30)
             result = history.final_result()
             
-            # Take webpage screenshot after test completes
+            # Take webpage screenshot after test completes  
             screenshot_path = None
             try:
                 await asyncio.sleep(2)  # Wait for result to display
@@ -217,8 +210,8 @@ async def main():
                 screenshot_filename = f"{i:03d}_{safe_name}_{timestamp}.png"
                 screenshot_path = SCREENSHOT_DIR / screenshot_filename
                 
-                # Access Playwright page through browser session
-                page = browser.session.context.pages[0]
+                # Access Playwright page - browser IS the session
+                page = browser.context.pages[0]
                 await page.screenshot(path=str(screenshot_path), full_page=True)
                     
                 print(f"  📸 Screenshot: {screenshot_path.name}")
