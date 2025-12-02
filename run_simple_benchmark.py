@@ -184,16 +184,9 @@ async def main():
         
         # Create fresh browser for this test
         print(f"  🌐 Starting fresh browser...")
-        from browser_use.browser.profile import BrowserProfile
-        
-        profile = BrowserProfile(
-            headless=False,  # Show browser window
-            window_size={'width': 1400, 'height': 1200},
-            screenshot_after_each_action=True  # Take screenshot after every action
-        )
-        
         browser = Browser(
-            browser_profile=profile
+            headless=False,  # Show browser window
+            window_size={'width': 1400, 'height': 1200}
         )
         
         try:
@@ -210,25 +203,24 @@ async def main():
             history = await agent.run(max_steps=30)
             result = history.final_result()
             
-            # Save all screenshots from this test
-            screenshot_paths = []
+            # Take full-page screenshot after test completes
+            screenshot_path = None
             try:
-                # Get all screenshots from history
-                screenshots = history.screenshot_paths()
-                if screenshots:
-                    print(f"  📸 Saving {len(screenshots)} screenshots...")
-                    safe_name = calculator_name.replace('/', '-').replace(' ', '_')[:50]
-                    
-                    for idx, screenshot in enumerate(screenshots):
-                        if os.path.exists(screenshot):
-                            screenshot_filename = f"{i:03d}_{safe_name}_step{idx+1}_{timestamp}.png"
-                            screenshot_dest = SCREENSHOT_DIR / screenshot_filename
-                            shutil.copy2(screenshot, screenshot_dest)
-                            screenshot_paths.append(str(screenshot_dest))
-                    
-                    print(f"     Saved to: {SCREENSHOT_DIR}/")
+                # Take screenshot of current page state
+                safe_name = calculator_name.replace('/', '-').replace(' ', '_')[:50]
+                screenshot_filename = f"{i:03d}_{safe_name}_{timestamp}.png"
+                screenshot_path = SCREENSHOT_DIR / screenshot_filename
+                
+                # Get browser session and take full-page screenshot
+                if hasattr(browser, 'session'):
+                    screenshot_data = await browser.session.take_screenshot(full_page=True)
+                    with open(screenshot_path, 'wb') as f:
+                        f.write(screenshot_data)
+                    print(f"  📸 Full-page screenshot saved: {screenshot_path.name}")
+                else:
+                    print(f"  ⚠️ Could not access browser session for screenshot")
             except Exception as e:
-                print(f"  ⚠️ Could not save screenshots: {str(e)[:50]}")
+                print(f"  ⚠️ Could not save screenshot: {str(e)[:80]}")
             
             # Parse JSON response from agent
             agent_answer = None
@@ -264,15 +256,15 @@ async def main():
                 if agent_num is None:
                     print(f"  ❌ FAILED - No answer extracted from: {str(result)[:50]}")
                     stats["failed"] += 1
-                    results.append({
-                        "calculator": calculator_name,
-                        "status": "failed",
-                        "ground_truth": truth_num,
-                        "result": str(result),
-                        "agent_json": final_json,
-                        "steps": history.number_of_steps(),
-                        "screenshots": screenshot_paths
-                    })
+                results.append({
+                    "calculator": calculator_name,
+                    "status": "failed",
+                    "ground_truth": truth_num,
+                    "result": str(result),
+                    "agent_json": final_json,
+                    "steps": history.number_of_steps(),
+                    "screenshot": str(screenshot_path) if screenshot_path else None
+                })
                 else:
                     tolerance = 0.05 * abs(truth_num)
                     is_correct = abs(agent_num - truth_num) <= tolerance
@@ -292,7 +284,7 @@ async def main():
                         "agent_json": final_json,
                         "raw_response": str(result),
                         "steps": history.number_of_steps(),
-                        "screenshots": screenshot_paths
+                        "screenshot": str(screenshot_path) if screenshot_path else None
                     })
                 
             except (ValueError, TypeError) as e:
@@ -318,7 +310,7 @@ async def main():
                 "calculator": calculator_name,
                 "status": "error",
                 "error": str(e),
-                "screenshots": []
+                "screenshot": None
             })
         
         finally:
