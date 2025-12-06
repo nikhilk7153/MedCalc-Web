@@ -1,0 +1,528 @@
+ system 
+You are an AI agent designed to operate in an iterative loop to automate browser tasks. Your ultimate goal is accomplishing the task provided in <user_request>.
+<intro>
+You excel at following tasks:
+1. Navigating complex websites and extracting precise information
+2. Automating form submissions and interactive web actions
+3. Gathering and saving information 
+4. Using your filesystem effectively to decide what to keep in your context
+5. Operate effectively in an agent loop
+6. Efficiently performing diverse web tasks
+</intro>
+<language_settings>
+- Default working language: **English**
+- Always respond in the same language as the user request
+</language_settings>
+<input>
+At every step, your input will consist of: 
+1. <agent_history>: A chronological event stream including your previous actions and their results.
+2. <agent_state>: Current <user_request>, summary of <file_system>, <todo_contents>, and <step_info>.
+3. <browser_state>: Current URL, open tabs, interactive elements indexed for actions, and visible page content.
+4. <browser_vision>: Screenshot of the browser with bounding boxes around interactive elements. If you used screenshot before, this will contain a screenshot.
+5. <read_state> This will be displayed only if your previous action was extract or read_file. This data is only shown in the current step.
+</input>
+<agent_history>
+Agent history will be given as a list of step information as follows:
+<step_{step_number}>:
+Evaluation of Previous Step: Assessment of last action
+Memory: Your memory of this step
+Next Goal: Your goal for this step
+Action Results: Your actions and their results
+</step_{step_number}>
+and system messages wrapped in <sys> tag.
+</agent_history>
+<user_request>
+USER REQUEST: This is your ultimate objective and always remains visible.
+- This has the highest priority. Make the user happy.
+- If the user request is very specific - then carefully follow each step and dont skip or hallucinate steps.
+- If the task is open ended you can plan yourself how to get it done.
+</user_request>
+<browser_state>
+1. Browser State will be given as:
+Current URL: URL of the page you are currently viewing.
+Open Tabs: Open tabs with their ids.
+Interactive Elements: All interactive elements will be provided in format as [index]<type>text</type> where
+- index: Numeric identifier for interaction
+- type: HTML element type (button, input, etc.)
+- text: Element description
+Examples:
+[33]<div>User form</div>
+\t*[35]<button aria-label='Submit form'>Submit</button>
+Note that:
+- Only elements with numeric indexes in [] are interactive
+- (stacked) indentation (with \t) is important and means that the element is a (html) child of the element above (with a lower index)
+- Elements tagged with a star `*[` are the new interactive elements that appeared on the website since the last step - if url has not changed. Your previous actions caused that change. Think if you need to interact with them, e.g. after input you might need to select the right option from the list.
+- Pure text elements without [] are not interactive.
+</browser_state>
+<browser_vision>
+If you used screenshot before, you will be provided with a screenshot of the current page with  bounding boxes around interactive elements. This is your GROUND TRUTH: reason about the image in your thinking to evaluate your progress.
+If an interactive index inside your browser_state does not have text information, then the interactive index is written at the top center of it's element in the screenshot.
+Use screenshot if you are unsure or simply want more information.
+</browser_vision>
+<browser_rules>
+Strictly follow these rules while using the browser and navigating the web:
+- Only interact with elements that have a numeric [index] assigned.
+- Only use indexes that are explicitly provided.
+- If research is needed, open a **new tab** instead of reusing the current one.
+- If the page changes after, for example, an input text action, analyse if you need to interact with new elements, e.g. selecting the right option from the list.
+- By default, only elements in the visible viewport are listed. Use scrolling tools if you suspect relevant content is offscreen which you need to interact with. Scroll ONLY if there are more pixels below or above the page.
+- You can scroll by a specific number of pages using the pages parameter (e.g., 0.5 for half page, 2.0 for two pages).
+- If a captcha appears, attempt solving it if possible. If not, use fallback strategies (e.g., alternative site, backtrack).
+- If expected elements are missing, try refreshing, scrolling, or navigating back.
+- If the page is not fully loaded, use the wait action.
+- You can call extract on specific pages to gather structured semantic information from the entire page, including parts not currently visible.
+- Call extract only if the information you are looking for is not visible in your <browser_state> otherwise always just use the needed text from the <browser_state>.
+- Calling the extract tool is expensive! DO NOT query the same page with the same extract query multiple times. Make sure that you are on the page with relevant information based on the screenshot before calling this tool.
+- If you fill an input field and your action sequence is interrupted, most often something changed e.g. suggestions popped up under the field.
+- If the action sequence was interrupted in previous step due to page changes, make sure to complete any remaining actions that were not executed. For example, if you tried to input text and click a search button but the click was not executed because the page changed, you should retry the click action in your next step.
+- If the <user_request> includes specific page information such as product type, rating, price, location, etc., try to apply filters to be more efficient.
+- The <user_request> is the ultimate goal. If the user specifies explicit steps, they have always the highest priority.
+- If you input into a field, you might need to press enter, click the search button, or select from dropdown for completion.
+- Don't login into a page if you don't have to. Don't login if you don't have the credentials. 
+- There are 2 types of tasks always first think which type of request you are dealing with:
+1. Very specific step by step instructions:
+- Follow them as very precise and don't skip steps. Try to complete everything as requested.
+2. Open ended tasks. Plan yourself, be creative in achieving them.
+- If you get stuck e.g. with logins or captcha in open-ended tasks you can re-evaluate the task and try alternative ways, e.g. sometimes accidentally login pops up, even though there some part of the page is accessible or you get some information via web search.
+- If you reach a PDF viewer, the file is automatically downloaded and you can see its path in <available_file_paths>. You can either read the file or scroll in the page to see more.
+</browser_rules>
+<file_system>
+- You have access to a persistent file system which you can use to track progress, store results, and manage long tasks.
+- Your file system is initialized with a `todo.md`: Use this to keep a checklist for known subtasks. Use `replace_file` tool to update markers in `todo.md` as first action whenever you complete an item. This file should guide your step-by-step execution when you have a long running task.
+- If you are writing a `csv` file, make sure to use double quotes if cell elements contain commas.
+- If the file is too large, you are only given a preview of your file. Use `read_file` to see the full content if necessary.
+- If exists, <available_file_paths> includes files you have downloaded or uploaded by the user. You can only read or upload these files but you don't have write access.
+- If the task is really long, initialize a `results.md` file to accumulate your results.
+- DO NOT use the file system if the task is less than 10 steps!
+</file_system>
+<task_completion_rules>
+You must call the `done` action in one of two cases:
+- When you have fully completed the USER REQUEST.
+- When you reach the final allowed step (`max_steps`), even if the task is incomplete.
+- If it is ABSOLUTELY IMPOSSIBLE to continue.
+The `done` action is your opportunity to terminate and share your findings with the user.
+- Set `success` to `true` only if the full USER REQUEST has been completed with no missing components.
+- If any part of the request is missing, incomplete, or uncertain, set `success` to `false`.
+- You can use the `text` field of the `done` action to communicate your findings and `files_to_display` to send file attachments to the user, e.g. `["results.md"]`.
+- Put ALL the relevant information you found so far in the `text` field when you call `done` action.
+- Combine `text` and `files_to_display` to provide a coherent reply to the user and fulfill the USER REQUEST.
+- You are ONLY ALLOWED to call `done` as a single action. Don't call it together with other actions.
+- If the user asks for specified format, such as "return JSON with following structure", "return a list of format...", MAKE sure to use the right format in your answer.
+- If the user asks for a structured output, your `done` action's schema will be modified. Take this schema into account when solving the task!
+</task_completion_rules>
+<action_rules>
+- You are allowed to use a maximum of 10 actions per step.
+If you are allowed multiple actions, you can specify multiple actions in the list to be executed sequentially (one after another).
+- If the page changes after an action, the sequence is interrupted and you get the new state. You can see this in your agent history when this happens.
+</action_rules>
+<efficiency_guidelines>
+You can output multiple actions in one step. Try to be efficient where it makes sense. Do not predict actions which do not make sense for the current page.
+**Recommended Action Combinations:**
+- `input` + `click` → Fill form field and submit/search in one step
+- `input` + `input` → Fill multiple form fields
+- `click` + `click` → Navigate through multi-step flows (when the page does not navigate between clicks)
+- `scroll` with pages 10 + `extract` → Scroll to the bottom of the page to load more content before extracting structured data
+- File operations + browser actions 
+Do not try multiple different paths in one step. Always have one clear goal per step. 
+Its important that you see in the next step if your action was successful, so do not chain actions which change the browser state multiple times, e.g. 
+- do not use click and then navigate, because you would not see if the click was successful or not.
+- or do not use switch and switch together, because you would not see the state in between.
+- do not use input and then scroll, because you would not see if the input was successful or not.
+</efficiency_guidelines>
+<reasoning_rules>
+Be clear and concise in your decision-making. Exhibit the following reasoning patterns to successfully achieve the <user_request>:
+- Reason about <agent_history> to track progress and context toward <user_request>.
+- Analyze the most recent "Next Goal" and "Action Result" in <agent_history> and clearly state what you previously tried to achieve.
+- Analyze all relevant items in <agent_history>, <browser_state>, <read_state>, <file_system>, <read_state> and the screenshot to understand your state.
+- Explicitly judge success/failure/uncertainty of the last action. Never assume an action succeeded just because it appears to be executed in your last step in <agent_history>. For example, you might have "Action 1/1: Input '2025-05-05' into element 3." in your history even though inputting text failed. Always verify using <browser_vision> (screenshot) as the primary ground truth. If a screenshot is unavailable, fall back to <browser_state>. If the expected change is missing, mark the last action as failed (or uncertain) and plan a recovery.
+- If todo.md is empty and the task is multi-step, generate a stepwise plan in todo.md using file tools.
+- Analyze `todo.md` to guide and track your progress. 
+- If any todo.md items are finished, mark them as complete in the file.
+- Analyze whether you are stuck, e.g. when you repeat the same actions multiple times without any progress. Then consider alternative approaches e.g. scrolling for more context or send_keys to interact with keys directly or different pages.
+- Analyze the <read_state> where one-time information are displayed due to your previous action. Reason about whether you want to keep this information in memory and plan writing them into a file if applicable using the file tools.
+- If you see information relevant to <user_request>, plan saving the information into a file.
+- Before writing data into a file, analyze the <file_system> and check if the file already has some content to avoid overwriting.
+- Decide what concise, actionable context should be stored in memory to inform future reasoning.
+- When ready to finish, state you are preparing to call done and communicate completion/results to the user.
+- Before done, use read_file to verify file contents intended for user output.
+- Always reason about the <user_request>. Make sure to carefully analyze the specific steps and information required. E.g. specific filters, specific form fields, specific information to search. Make sure to always compare the current trajactory with the user request and think carefully if thats how the user requested it.
+</reasoning_rules>
+<examples>
+Here are examples of good output patterns. Use them as reference but never copy them directly.
+<todo_examples>
+  "write_file": {
+    "file_name": "todo.md",
+    "content": "# ArXiv CS.AI Recent Papers Collection Task\n\n## Goal: Collect metadata for 20 most recent papers\n\n## Tasks:\n- [ ] Navigate to https://arxiv.org/list/cs.AI/recent\n- [ ] Initialize papers.md file for storing paper data\n- [ ] Collect paper 1/20: The Automated LLM Speedrunning Benchmark\n- [x] Collect paper 2/20: AI Model Passport\n- [ ] Collect paper 3/20: Embodied AI Agents\n- [ ] Collect paper 4/20: Conceptual Topic Aggregation\n- [ ] Collect paper 5/20: Artificial Intelligent Disobedience\n- [ ] Continue collecting remaining papers from current page\n- [ ] Navigate through subsequent pages if needed\n- [ ] Continue until 20 papers are collected\n- [ ] Verify all 20 papers have complete metadata\n- [ ] Final review and completion"
+  }
+</todo_examples>
+<evaluation_examples>
+- Positive Examples:
+"evaluation_previous_goal": "Successfully navigated to the product page and found the target information. Verdict: Success"
+"evaluation_previous_goal": "Clicked the login button and user authentication form appeared. Verdict: Success"
+- Negative Examples:
+"evaluation_previous_goal": "Failed to input text into the search bar as I cannot see it in the image. Verdict: Failure"
+"evaluation_previous_goal": "Clicked the submit button with index 15 but the form was not submitted successfully. Verdict: Failure"
+</evaluation_examples>
+<memory_examples>
+"memory": "Visited 2 of 5 target websites. Collected pricing data from Amazon ($39.99) and eBay ($42.00). Still need to check Walmart, Target, and Best Buy for the laptop comparison."
+"memory": "Found many pending reports that need to be analyzed in the main page. Successfully processed the first 2 reports on quarterly sales data and moving on to inventory analysis and customer feedback reports."
+</memory_examples>
+<next_goal_examples>
+"next_goal": "Click on the 'Add to Cart' button to proceed with the purchase flow."
+"next_goal": "Extract details from the first item on the page."
+</next_goal_examples>
+</examples>
+<output>
+You must ALWAYS respond with a valid JSON in this exact format:
+{
+  "evaluation_previous_goal": "One-sentence analysis of your last action. Clearly state success, failure, or uncertain.",
+  "memory": "1-3 sentences of specific memory of this step and overall progress. You should put here everything that will help you track progress in future steps. Like counting pages visited, items found, etc.",
+  "next_goal": "State the next immediate goal and action to achieve it, in one clear sentence.",
+  "action":[{"navigate": { "url": "url_value"}}, // ... more actions in sequence]
+}
+Action list should NEVER be empty.
+</output>
+
+
+ user 
+<agent_history>
+Agent initialized
+<step>
+Initialized agent and ready to start; no browser actions performed yet, so status is pending.
+Task: compute GFR using 2021 CKD-EPI Creatinine equation via mdapp calculator; patient values available in the note (female, age 22, serum creatinine 141.4 μmol/L, race: Chinese Han — treat as non-Black per calculator, weight/height not required by CKD-EPI). Will use the web calculator rather than manual computation.
+Open the MDApp GFR calculator page (https://www.mdapp.co/gfr-calculator-17/) in a new tab to begin entering patient data.
+Result
+Opened new tab with URL https://www.mdapp.co/gfr-calculator-17/
+<step>
+Page was opened but the calculator's interactive elements were not yet available in the DOM snapshot, so the previous step is uncertain (page not fully loaded).
+Opened MDApp GFR calculator tab (https://www.mdapp.co/gfr-calculator-17/). The patient values to use: female, age 22, serum creatinine 141.4 μmol/L, race: Chinese Han (treat as non-Black).
+Wait for the page to finish loading so the form's interactive elements appear, then fill the calculator fields with the patient's values.
+Result
+Waited for 3 seconds
+</agent_history>
+
+<agent_state>
+<user_request>
+You are a medical AI assistant testing a web calculator.
+
+PATIENT NOTE:
+The patient, a 22-year-old woman of Chinese Han ethnicity, was admitted for severe edema of the facial region and two lower limbs over 3 mo.
+The patient developed edema of the facial region and two lower limbs 3 mo ago without obvious cause. Her symptoms were mild in the morning and severe in the afternoon. At the same time, she experienced migratory pain of the small joints, which improved after movement, as well as decreased urinary volume, weakness, and poor appetite.
+The patient had a free previous medical history.
+The patient’s temperature was 36.6 °C, heart rate was 78 bpm, respiratory rate was 20 breaths per minute, blood pressure was 122/80 mmHg, and oxygen saturation in room air was 98%. The patient was conscious and she complied with the physician's physical examination. Her heart, lungs, and abdomen examinations showed no significant abnormalities, no percussion pain in her kidney area, and severe pitting edema in both lower extremities.
+Routine urine examination revealed the following: Proteinuria +++, hematuria ++; phase of urinary red blood cells: Deformed erythrocytosis 70%, urine protein quantitation 4.2 g/24 h; urea nitrogen 15.7 mmol/L, and serum creatinine 141.4 μmol/L. Routine blood test results were as follows: Hemoglobin 92 g/L, white blood cells 4.8 × 109/L, blood platelets 218 × 109/L, antinuclear antibody 1:3200, cytoplasmic granules 1:1000, ds-DNA antibody > 1:3200, C3 0.56 g/L, and C4 0.22 g/L.
+Pathological results showed 35 glomeruli in the punctured renal tissue, including one with global sclerosis, two with ischemic sclerosis, and the remaining glomeruli with diffuse proliferation of mesangial cells and endothelial cells, accompanied by segmental dual-track formation of a thickened basement membrane, segmental Meyer's loop, leukocyte infiltration, and segmental microthrombus formation. Fuchsinophilic protein deposition can be found at the mesangial region and subepithelial region, including fibrin crescent formation of one cell. The kidney tubular epithelium exhibited granular and vacuolar degeneration, as well as multifocal atrophy. The renal interstitium showed multishaped lymphocyte and monocyte infiltration, together with mild thickening of the arteriole wall. Paraffin immunofluorescence revealed: Immunoglobulin (Ig) G (++), IgA (++), IgM (++), C3 (+), fall risk assessment (+), C1q (++), and granular deposition along the mesangial region and capillary wall. Combined with clinical findings, this condition was considered diffuse proliferative lupus nephritis, with IV-G (A), AI = 11, and CI = 5. AI was scored as follows: Cellular proliferation (2 points), leukocyte infiltration (1 point), nuclear fragmentation/fibrinoid necrosis (2 points), cell crescent (0 points), Meyer's loop/thrombus (2 points), and interstitial monocyte infiltration (2 points). CI was scored as follows: Sclerosis (2 points), fibrin crescent (0 points), tubular atrophy (2 points), and interstitial fibrosis (2 points) (Figure ).
+After consideration of the renal puncture results, oral administration of prednisone was begun at 50 mg/d, and meanwhile, cyclophosphamide was applied through intravenous injection at a dosage of 1.0 g monthly, which lasted for a consecutive 6 mo and was stopped after an accumulative use of 6 g. The serum creatinine fluctuated within an approximate range of 120-160 μmol/L, and blood albumin fluctuated from approximately 29-35 g/L. Then, the patient began to take AZA 50 mg/d as maintenance treatment but experienced extensive alopecia and shedding of pubic hair on the 13th day after oral administration. Pharyngalgia appeared on the 14th day, and fever with a body temperature up to 42 ℃ occurred on the 15th day. The patient came to the hospital for the second time. Physical examination revealed the following: Body temperature, 39.4 ℃; pulse, 92 times/min; breath rate, 22 times/min; blood pressure, 182/100 mmHg. The patient exhibited clear consciousness and emotional distress; she presented scattered chromatosis on her skin, and a rash was found on the inner surface of the bilateral thighs. Pharyngeal congestion was noted, and the breath sounds of the two lungs were clear. The heart rate was 92 times/min. The abdomen was flat, soft, and free from tenderness or rebound tenderness, and there was no liver or spleen involvement. Routine blood work showed the following: Hemoglobin 72 g/L, white blood cell count 1.25 × 109/L, blood platelet count 13 × 109/L, lymphocyte ratio 95.7%, neutrophil ratio 1.6%, and neutrophil count 0.01 × 109/L (Figure ). The results of the bone marrow biopsy were as follows: Myelodysplasia low in the myelogram and focal hyperplasia in bone marrow tissue with active hyperplasia in some areas (Figure ). Routine urinalysis results were as follows: Protein (+), occult blood 2+, and Epstein-Barr virus (EBV) positivity (3.58 × 104). TPMT genotyping testing (four single nucleotide polymorphisms, single base extension method) revealed the following: TPMT 3C gene polymorphism (719A>G) (this site is the most common gene mutation site in Asians) test result: A/A; TPMT 3B gene polymorphism (460G>A) test result: G/G; TPMT 2 gene polymorphism (238G>C) test result: G/G; no abnormity was found in any of the above results.
+
+QUESTION:
+Using the 2021 CKD-EPI Creatinine equation, what is the patient's Glomerular Filtration Rate (GFR) in terms of mL/min/1.73 m²? You should use the patient's medical values and health status when they were first admitted to the hospital prior to any treatment.
+
+CRITICAL RULES:
+DO NOT calculate or compute the answer yourself, you MUST use the web calculator to get the answer.
+Your answer will be marked as incorrect if you do this otherwise.
+
+TASK:
+1. Navigate to https://www.mdapp.co/gfr-calculator-17/
+2. Read the patient note and extract the relevant clinical values
+3. Fill out the ENTIRE calculator form with the values from the note
+4. Click the Calculate button on the webpage
+5. Wait for the result to appear on the page
+6. Extract ONLY the numerical result that the CALCULATOR computed (not your own calculation)
+
+IMPORTANT - Final Response Format:
+After the calculator displays its result, return ONLY this JSON:
+{"answer": <number_from_calculator>}
+
+Examples:
+- {"answer": 83.94}
+- {"answer": 12}
+- {"answer": 2.5}
+
+The answer MUST be the value the web calculator computed, NOT a value you calculated yourself.
+</user_request>
+<file_system>
+
+</file_system>
+<todo_contents>
+[empty todo.md, fill it when applicable]
+</todo_contents>
+<step_info>Step3 maximum:30
+Today:2025-12-03</step_info>
+</agent_state>
+<browser_state>
+<page_stats>28 links, 65 interactive, 1 iframes, 1 scroll containers, 7 shadow(open), 0 shadow(closed), 1 images, 453 total elements</page_stats>
+Current tab: ECCD
+Available tabs:
+Tab ECCD: https://www.mdapp.co/gfr-calculator-17/ - mdapp.co/gfr-calculator-17/
+
+<page_info>0.0 pages above, 2.6 pages below, 3.6 total pages</page_info>
+
+Interactive elements:
+[Start of page]
+|SCROLL|<html /> (0.0 pages above, 2.6 pages below)
+	[354]<a />
+		[355]<img alt=MDApp />
+	[365]<a />
+		Home
+	[369]<a />
+		Specialties
+	[401]<a />
+		Blog
+	[406]<a />
+		Contact
+	[419]<a id=search-icon title=Search Site... />
+	[423]<a id=social-icon title=Folow Us... />
+	[427]<a id=users-icon title=Be a Valuable Member of Our Community />
+	GFR Calculator
+	[677]<a title=To Save This Calculator As A Favourite You Must Be Logged In... />
+	Determines the glomerular filtration rate based on serum creatinine, patient age, gender and race.
+	[680]<a title=Expand Text expanded=false />
+	[691]<hr />
+	[703]<button />
+		Purpose
+	[708]<button />
+		Key Facts
+	[713]<button />
+		Jump To
+	[809]<a />
+		GFR for adults
+	[814]<a />
+		GFR for children
+	Serum creatinine
+	|SHADOW(open)|*[43]<input name=scr type=number autocomplete=on valuemin=0 valuemax=0 compound_components=(name=Increment,role=button),(name=Decrement,role=button),(name=Value,role=textbox) />
+	|SHADOW(open)|*[44]<select name=scr_um expanded=false compound_components=(name=Dropdown Toggle,role=button),(name=Options,role=listbox,count=2,options=mg/dL|mol/L,format=date/path format) />
+	[848]<span />
+		Age
+	|SHADOW(open)|*[45]<input name=age type=number autocomplete=on placeholder=years valuemin=0 valuemax=0 compound_components=(name=Increment,role=button),(name=Decrement,role=button),(name=Value,role=textbox) />
+	Gender
+	|SHADOW(open)|*[46]<select name=gender expanded=false compound_components=(name=Dropdown Toggle,role=button),(name=Options,role=listbox,count=2,options=Male|Female) />
+	[881]<span />
+		Race
+	|SHADOW(open)|*[47]<select name=race expanded=false compound_components=(name=Dropdown Toggle,role=button),(name=Options,role=listbox,count=2,options=White/Other|Black) />
+	|SHADOW(open)|[71]<input type=submit value=Calculate />
+	|SHADOW(open)|[72]<input value=Reset type=reset />
+	[904]<a />
+		[906]<i />
+			[908]<span />
+	[912]<a title=Get this tool for your website! />
+		[913]<i />
+			[915]<span />
+				Embed
+	[918]<a id=disabled title=You can open a pdf file with the input & results to print and save />
+		[919]<i />
+			[921]<span />
+				Print
+	[924]<a id=share-app title=Share with your friends! />
+		[925]<i />
+			[927]<span />
+				Share
+	[1118]<button />
+		Other Tools
+	[1123]<button />
+		Feedback
+	[1128]<button />
+		How to
+		Print
+	|SCROLL[1281]<iframe id=aswift_2 title=Advertisement aria-label=Advertisement /> (scroll)
+	Glomerular filtration rate explained
+	GFR is the most important of the parameters that evaluate kidney function. It is estimated through different methods based on serum creatinine.
+	Creatinine is the break down product of the creatinine phosphate, involved in muscular function. Serum creatinine levels determine the clearance that is used further on to establish GFR.
+	GFR offers information on the amount of liquid that gets filtered by the capillaries of the kidney glomerular into the Bowman's capsule during a specific time period.
+	Thus, its value shows how efficiently the kidneys perform their function, that of cleaning blood of different waste products and toxins and their excretion through urine.
+	Glomerular filtration rate can be physically determined by comparing concentrations of a marker substance in a sample of blood an in a sample of urine.
+	GFR formulas
+	The above calculator employs the following formulas to determine the glomerular filtration rate:
+	The
+	IDMS-traceable MDRD equation
+	GFR = 175 x (S
+	Cr
+	-1.154
+	x (Age)
+	-0.203
+	x (0.742 only if female) x (1.212 only if black)
+	The
+	CKD-EPI formula
+	is composed based on patient gender and race, as presented in the following table:
+	Race
+	Gender
+	Serum Creatinine (S
+	Cr
+	Formula (GFR = …)
+	White/ Other race
+	Female
+	≤0.7
+	144 x (S
+	Cr
+	/0.7)
+	-0.329
+	x 0.993
+	Age
+	>0.7
+	144 x (S
+	Cr
+	/0.7)
+	-1.209
+	x 0.993
+	Age
+	Male
+	≤0.9
+	141 x (S
+	Cr
+	/0.9)
+	-0.411
+	x 0.993
+	Age
+	>0.9
+	141 x (S
+	Cr
+	/0.9)
+	-1.209
+	x 0.993
+	Age
+	Black
+	Female
+	≤0.7
+	166 x (S
+	Cr
+	/0.7)
+	-0.329
+	x 0.993
+	Age
+	>0.7
+	166 x (S
+	Cr
+	/0.7)
+	-1.209
+	x 0.993
+	Age
+	Male
+	≤0.9
+	163 x (S
+	Cr
+	/0.9)
+	-0.411
+	x 0.993
+	Age
+	>0.9
+	163 x (S
+	Cr
+	/0.9)
+	-1.209
+	x 0.993
+	Age
+	The
+	Mayo Quadratic formula
+	GFR = e
+	(1.911 + 5.249/SCr - 2.114/SCr
+	- 0.00686 x Age - (0.205 only if Female))
+	Where:
+	e = 2.71828182845905
+	Cr
+	= the serum creatinine, either expressed in mg/dL. When S
+	Cr
+	is expressed in mol/L, the conversion rate that should be used is 88.4 mol/L = 1 mg/dL.
+	Note that in any case serum creatinine is less than 0.8 mg/dL, the Mayo Quadratic Formula uses 0.8 mg/dL default for S
+	Cr
+	In the case of pediatric patients, the
+	Schwartz formula
+	is used:
+	Browse specialties
+	[1950]<a />
+		[14]<i />
+		Allergy And Immunology
+	[1957]<a />
+		[15]<i />
+		Anesthesiology
+	[1964]<a />
+		[16]<i />
+		Cardiology
+	[1971]<a />
+		[17]<i />
+		Deficiency
+	[1978]<a />
+		[18]<i />
+		Dermatology
+	[1985]<a />
+		[19]<i />
+		Disability
+	[1992]<a />
+		[20]<i />
+		Emergency
+	[1999]<a />
+		[21]<i />
+		View All
+	Become A Member
+	[2019]<i />
+	Save your favourites!
+	[2025]<i />
+	Get latest medical calculators!
+	[2030]<a />
+		[23]<button />
+			Sign Up
+	Join Us / Social Media
+	[2046]<a />
+	[2054]<a />
+	[2058]<a />
+</browser_state>
+
+Current screenshot:
+
+{
+  "evaluation_previous_goal": "Page was opened and visible; interactive calculator fields are present but not yet filled — partial success (ready to input).",
+  "memory": "On MDApp GFR calculator page. Relevant interactive elements found: serum creatinine input [43], unit select [44], age [45], gender [46], race [47], Calculate button [71]. Patient values: female, age 22, Scr 141.4 μmol/L (use mol/L), race non-Black (choose White/Other).",
+  "next_goal": "Fill the calculator form with the patient's values (Scr=141.4, unit=mol/L, Age=22, Gender=Female, Race=White/Other), click Calculate, wait for the result, and extract the numeric GFR produced.",
+  "action": [
+    {
+      "input": {
+        "index": 43,
+        "text": "141.4",
+        "clear": true
+      }
+    },
+    {
+      "select_dropdown": {
+        "index": 44,
+        "text": "mol/L"
+      }
+    },
+    {
+      "input": {
+        "index": 45,
+        "text": "22",
+        "clear": true
+      }
+    },
+    {
+      "select_dropdown": {
+        "index": 46,
+        "text": "Female"
+      }
+    },
+    {
+      "select_dropdown": {
+        "index": 47,
+        "text": "White/Other"
+      }
+    },
+    {
+      "click": {
+        "index": 71,
+        "coordinate_x": null,
+        "coordinate_y": null,
+        "force": false
+      }
+    },
+    {
+      "wait": {
+        "seconds": 2
+      }
+    },
+    {
+      "extract": {
+        "query": "GFR result",
+        "extract_links": false,
+        "start_from_char": 0
+      }
+    }
+  ]
+}

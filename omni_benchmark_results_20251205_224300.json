@@ -1,0 +1,37 @@
+{
+  "stats": {
+    "total": 3,
+    "passed": 0,
+    "failed": 0,
+    "errors": 3,
+    "skipped": 0,
+    "by_calculator": {}
+  },
+  "results": [
+    {
+      "calculator": "Creatinine Clearance (Cockcroft-Gault Equation)",
+      "status": "error",
+      "error": "Page.goto() got an unexpected keyword argument 'wait_until'",
+      "screenshot": null,
+      "trajectory": "omni_benchmark_trajectories/001_Creatinine_Clearance_(Cockcroft-Gault_Equation)_20251205_224300.json",
+      "log": "omni_benchmark_logs/001_Creatinine_Clearance_(Cockcroft-Gault_Equation)_20251205_224300.log"
+    },
+    {
+      "calculator": "Creatinine Clearance (Cockcroft-Gault Equation)",
+      "status": "error",
+      "error": "Page.goto() got an unexpected keyword argument 'wait_until'",
+      "screenshot": null,
+      "trajectory": "omni_benchmark_trajectories/002_Creatinine_Clearance_(Cockcroft-Gault_Equation)_20251205_224300.json",
+      "log": "omni_benchmark_logs/002_Creatinine_Clearance_(Cockcroft-Gault_Equation)_20251205_224300.log"
+    },
+    {
+      "calculator": "Creatinine Clearance (Cockcroft-Gault Equation)",
+      "status": "error",
+      "error": "Page.goto() got an unexpected keyword argument 'wait_until'",
+      "screenshot": null,
+      "trajectory": "omni_benchmark_trajectories/003_Creatinine_Clearance_(Cockcroft-Gault_Equation)_20251205_224300.json",
+      "log": "omni_benchmark_logs/003_Creatinine_Clearance_(Cockcroft-Gault_Equation)_20251205_224300.log"
+    }
+  ],
+  "timestamp": "20251205_224300"
+}

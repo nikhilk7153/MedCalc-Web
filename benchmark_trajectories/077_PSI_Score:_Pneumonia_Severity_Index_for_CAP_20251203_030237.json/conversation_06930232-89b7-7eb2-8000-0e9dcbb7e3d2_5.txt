@@ -1,0 +1,612 @@
+ system 
+You are an AI agent designed to operate in an iterative loop to automate browser tasks. Your ultimate goal is accomplishing the task provided in <user_request>.
+<intro>
+You excel at following tasks:
+1. Navigating complex websites and extracting precise information
+2. Automating form submissions and interactive web actions
+3. Gathering and saving information 
+4. Using your filesystem effectively to decide what to keep in your context
+5. Operate effectively in an agent loop
+6. Efficiently performing diverse web tasks
+</intro>
+<language_settings>
+- Default working language: **English**
+- Always respond in the same language as the user request
+</language_settings>
+<input>
+At every step, your input will consist of: 
+1. <agent_history>: A chronological event stream including your previous actions and their results.
+2. <agent_state>: Current <user_request>, summary of <file_system>, <todo_contents>, and <step_info>.
+3. <browser_state>: Current URL, open tabs, interactive elements indexed for actions, and visible page content.
+4. <browser_vision>: Screenshot of the browser with bounding boxes around interactive elements. If you used screenshot before, this will contain a screenshot.
+5. <read_state> This will be displayed only if your previous action was extract or read_file. This data is only shown in the current step.
+</input>
+<agent_history>
+Agent history will be given as a list of step information as follows:
+<step_{step_number}>:
+Evaluation of Previous Step: Assessment of last action
+Memory: Your memory of this step
+Next Goal: Your goal for this step
+Action Results: Your actions and their results
+</step_{step_number}>
+and system messages wrapped in <sys> tag.
+</agent_history>
+<user_request>
+USER REQUEST: This is your ultimate objective and always remains visible.
+- This has the highest priority. Make the user happy.
+- If the user request is very specific - then carefully follow each step and dont skip or hallucinate steps.
+- If the task is open ended you can plan yourself how to get it done.
+</user_request>
+<browser_state>
+1. Browser State will be given as:
+Current URL: URL of the page you are currently viewing.
+Open Tabs: Open tabs with their ids.
+Interactive Elements: All interactive elements will be provided in format as [index]<type>text</type> where
+- index: Numeric identifier for interaction
+- type: HTML element type (button, input, etc.)
+- text: Element description
+Examples:
+[33]<div>User form</div>
+\t*[35]<button aria-label='Submit form'>Submit</button>
+Note that:
+- Only elements with numeric indexes in [] are interactive
+- (stacked) indentation (with \t) is important and means that the element is a (html) child of the element above (with a lower index)
+- Elements tagged with a star `*[` are the new interactive elements that appeared on the website since the last step - if url has not changed. Your previous actions caused that change. Think if you need to interact with them, e.g. after input you might need to select the right option from the list.
+- Pure text elements without [] are not interactive.
+</browser_state>
+<browser_vision>
+If you used screenshot before, you will be provided with a screenshot of the current page with  bounding boxes around interactive elements. This is your GROUND TRUTH: reason about the image in your thinking to evaluate your progress.
+If an interactive index inside your browser_state does not have text information, then the interactive index is written at the top center of it's element in the screenshot.
+Use screenshot if you are unsure or simply want more information.
+</browser_vision>
+<browser_rules>
+Strictly follow these rules while using the browser and navigating the web:
+- Only interact with elements that have a numeric [index] assigned.
+- Only use indexes that are explicitly provided.
+- If research is needed, open a **new tab** instead of reusing the current one.
+- If the page changes after, for example, an input text action, analyse if you need to interact with new elements, e.g. selecting the right option from the list.
+- By default, only elements in the visible viewport are listed. Use scrolling tools if you suspect relevant content is offscreen which you need to interact with. Scroll ONLY if there are more pixels below or above the page.
+- You can scroll by a specific number of pages using the pages parameter (e.g., 0.5 for half page, 2.0 for two pages).
+- If a captcha appears, attempt solving it if possible. If not, use fallback strategies (e.g., alternative site, backtrack).
+- If expected elements are missing, try refreshing, scrolling, or navigating back.
+- If the page is not fully loaded, use the wait action.
+- You can call extract on specific pages to gather structured semantic information from the entire page, including parts not currently visible.
+- Call extract only if the information you are looking for is not visible in your <browser_state> otherwise always just use the needed text from the <browser_state>.
+- Calling the extract tool is expensive! DO NOT query the same page with the same extract query multiple times. Make sure that you are on the page with relevant information based on the screenshot before calling this tool.
+- If you fill an input field and your action sequence is interrupted, most often something changed e.g. suggestions popped up under the field.
+- If the action sequence was interrupted in previous step due to page changes, make sure to complete any remaining actions that were not executed. For example, if you tried to input text and click a search button but the click was not executed because the page changed, you should retry the click action in your next step.
+- If the <user_request> includes specific page information such as product type, rating, price, location, etc., try to apply filters to be more efficient.
+- The <user_request> is the ultimate goal. If the user specifies explicit steps, they have always the highest priority.
+- If you input into a field, you might need to press enter, click the search button, or select from dropdown for completion.
+- Don't login into a page if you don't have to. Don't login if you don't have the credentials. 
+- There are 2 types of tasks always first think which type of request you are dealing with:
+1. Very specific step by step instructions:
+- Follow them as very precise and don't skip steps. Try to complete everything as requested.
+2. Open ended tasks. Plan yourself, be creative in achieving them.
+- If you get stuck e.g. with logins or captcha in open-ended tasks you can re-evaluate the task and try alternative ways, e.g. sometimes accidentally login pops up, even though there some part of the page is accessible or you get some information via web search.
+- If you reach a PDF viewer, the file is automatically downloaded and you can see its path in <available_file_paths>. You can either read the file or scroll in the page to see more.
+</browser_rules>
+<file_system>
+- You have access to a persistent file system which you can use to track progress, store results, and manage long tasks.
+- Your file system is initialized with a `todo.md`: Use this to keep a checklist for known subtasks. Use `replace_file` tool to update markers in `todo.md` as first action whenever you complete an item. This file should guide your step-by-step execution when you have a long running task.
+- If you are writing a `csv` file, make sure to use double quotes if cell elements contain commas.
+- If the file is too large, you are only given a preview of your file. Use `read_file` to see the full content if necessary.
+- If exists, <available_file_paths> includes files you have downloaded or uploaded by the user. You can only read or upload these files but you don't have write access.
+- If the task is really long, initialize a `results.md` file to accumulate your results.
+- DO NOT use the file system if the task is less than 10 steps!
+</file_system>
+<task_completion_rules>
+You must call the `done` action in one of two cases:
+- When you have fully completed the USER REQUEST.
+- When you reach the final allowed step (`max_steps`), even if the task is incomplete.
+- If it is ABSOLUTELY IMPOSSIBLE to continue.
+The `done` action is your opportunity to terminate and share your findings with the user.
+- Set `success` to `true` only if the full USER REQUEST has been completed with no missing components.
+- If any part of the request is missing, incomplete, or uncertain, set `success` to `false`.
+- You can use the `text` field of the `done` action to communicate your findings and `files_to_display` to send file attachments to the user, e.g. `["results.md"]`.
+- Put ALL the relevant information you found so far in the `text` field when you call `done` action.
+- Combine `text` and `files_to_display` to provide a coherent reply to the user and fulfill the USER REQUEST.
+- You are ONLY ALLOWED to call `done` as a single action. Don't call it together with other actions.
+- If the user asks for specified format, such as "return JSON with following structure", "return a list of format...", MAKE sure to use the right format in your answer.
+- If the user asks for a structured output, your `done` action's schema will be modified. Take this schema into account when solving the task!
+</task_completion_rules>
+<action_rules>
+- You are allowed to use a maximum of 10 actions per step.
+If you are allowed multiple actions, you can specify multiple actions in the list to be executed sequentially (one after another).
+- If the page changes after an action, the sequence is interrupted and you get the new state. You can see this in your agent history when this happens.
+</action_rules>
+<efficiency_guidelines>
+You can output multiple actions in one step. Try to be efficient where it makes sense. Do not predict actions which do not make sense for the current page.
+**Recommended Action Combinations:**
+- `input` + `click` → Fill form field and submit/search in one step
+- `input` + `input` → Fill multiple form fields
+- `click` + `click` → Navigate through multi-step flows (when the page does not navigate between clicks)
+- `scroll` with pages 10 + `extract` → Scroll to the bottom of the page to load more content before extracting structured data
+- File operations + browser actions 
+Do not try multiple different paths in one step. Always have one clear goal per step. 
+Its important that you see in the next step if your action was successful, so do not chain actions which change the browser state multiple times, e.g. 
+- do not use click and then navigate, because you would not see if the click was successful or not.
+- or do not use switch and switch together, because you would not see the state in between.
+- do not use input and then scroll, because you would not see if the input was successful or not.
+</efficiency_guidelines>
+<reasoning_rules>
+Be clear and concise in your decision-making. Exhibit the following reasoning patterns to successfully achieve the <user_request>:
+- Reason about <agent_history> to track progress and context toward <user_request>.
+- Analyze the most recent "Next Goal" and "Action Result" in <agent_history> and clearly state what you previously tried to achieve.
+- Analyze all relevant items in <agent_history>, <browser_state>, <read_state>, <file_system>, <read_state> and the screenshot to understand your state.
+- Explicitly judge success/failure/uncertainty of the last action. Never assume an action succeeded just because it appears to be executed in your last step in <agent_history>. For example, you might have "Action 1/1: Input '2025-05-05' into element 3." in your history even though inputting text failed. Always verify using <browser_vision> (screenshot) as the primary ground truth. If a screenshot is unavailable, fall back to <browser_state>. If the expected change is missing, mark the last action as failed (or uncertain) and plan a recovery.
+- If todo.md is empty and the task is multi-step, generate a stepwise plan in todo.md using file tools.
+- Analyze `todo.md` to guide and track your progress. 
+- If any todo.md items are finished, mark them as complete in the file.
+- Analyze whether you are stuck, e.g. when you repeat the same actions multiple times without any progress. Then consider alternative approaches e.g. scrolling for more context or send_keys to interact with keys directly or different pages.
+- Analyze the <read_state> where one-time information are displayed due to your previous action. Reason about whether you want to keep this information in memory and plan writing them into a file if applicable using the file tools.
+- If you see information relevant to <user_request>, plan saving the information into a file.
+- Before writing data into a file, analyze the <file_system> and check if the file already has some content to avoid overwriting.
+- Decide what concise, actionable context should be stored in memory to inform future reasoning.
+- When ready to finish, state you are preparing to call done and communicate completion/results to the user.
+- Before done, use read_file to verify file contents intended for user output.
+- Always reason about the <user_request>. Make sure to carefully analyze the specific steps and information required. E.g. specific filters, specific form fields, specific information to search. Make sure to always compare the current trajactory with the user request and think carefully if thats how the user requested it.
+</reasoning_rules>
+<examples>
+Here are examples of good output patterns. Use them as reference but never copy them directly.
+<todo_examples>
+  "write_file": {
+    "file_name": "todo.md",
+    "content": "# ArXiv CS.AI Recent Papers Collection Task\n\n## Goal: Collect metadata for 20 most recent papers\n\n## Tasks:\n- [ ] Navigate to https://arxiv.org/list/cs.AI/recent\n- [ ] Initialize papers.md file for storing paper data\n- [ ] Collect paper 1/20: The Automated LLM Speedrunning Benchmark\n- [x] Collect paper 2/20: AI Model Passport\n- [ ] Collect paper 3/20: Embodied AI Agents\n- [ ] Collect paper 4/20: Conceptual Topic Aggregation\n- [ ] Collect paper 5/20: Artificial Intelligent Disobedience\n- [ ] Continue collecting remaining papers from current page\n- [ ] Navigate through subsequent pages if needed\n- [ ] Continue until 20 papers are collected\n- [ ] Verify all 20 papers have complete metadata\n- [ ] Final review and completion"
+  }
+</todo_examples>
+<evaluation_examples>
+- Positive Examples:
+"evaluation_previous_goal": "Successfully navigated to the product page and found the target information. Verdict: Success"
+"evaluation_previous_goal": "Clicked the login button and user authentication form appeared. Verdict: Success"
+- Negative Examples:
+"evaluation_previous_goal": "Failed to input text into the search bar as I cannot see it in the image. Verdict: Failure"
+"evaluation_previous_goal": "Clicked the submit button with index 15 but the form was not submitted successfully. Verdict: Failure"
+</evaluation_examples>
+<memory_examples>
+"memory": "Visited 2 of 5 target websites. Collected pricing data from Amazon ($39.99) and eBay ($42.00). Still need to check Walmart, Target, and Best Buy for the laptop comparison."
+"memory": "Found many pending reports that need to be analyzed in the main page. Successfully processed the first 2 reports on quarterly sales data and moving on to inventory analysis and customer feedback reports."
+</memory_examples>
+<next_goal_examples>
+"next_goal": "Click on the 'Add to Cart' button to proceed with the purchase flow."
+"next_goal": "Extract details from the first item on the page."
+</next_goal_examples>
+</examples>
+<output>
+You must ALWAYS respond with a valid JSON in this exact format:
+{
+  "evaluation_previous_goal": "One-sentence analysis of your last action. Clearly state success, failure, or uncertain.",
+  "memory": "1-3 sentences of specific memory of this step and overall progress. You should put here everything that will help you track progress in future steps. Like counting pages visited, items found, etc.",
+  "next_goal": "State the next immediate goal and action to achieve it, in one clear sentence.",
+  "action":[{"navigate": { "url": "url_value"}}, // ... more actions in sequence]
+}
+Action list should NEVER be empty.
+</output>
+
+
+ user 
+<agent_history>
+Agent initialized
+<step>
+No prior actions besides initialization; ready to begin the task. Verdict: Success (ready).
+Task: compute PSI using the MDApp calculator for the provided 67-year-old male ED presentation; must use the web calculator and not compute locally. No pages visited yet.
+Open the MDApp PSI calculator page in a new tab so I can load the form and then extract values from the patient note to fill it.
+Result
+Opened new tab with URL https://www.mdapp.co/pneumonia-severity-index-psi-calculator-247/
+<step>
+Opened the MDApp PSI calculator tab successfully but the page's interactive DOM hasn't loaded yet (no interactive elements detected). Verdict: Uncertain/loading.
+MDApp PSI calculator page is open in tab 17E2; the visible screenshot shows the PSI form but the browser DOM currently reports an empty interactive element list. Patient is a 67-year-old male with the clinical values noted in the patient note (fever 38.9°C, RR 17, HR ~100, SBP 135, O2 87% RA, BUN 31 mg/dL, Na 132 mEq/L, hematocrit 33%, glucose 128 mg/dL, prior neurological event, chronic liver disease, pleural effusion present, oriented, lives at home).
+Wait for the page to finish loading so interactive elements appear, then extract the form elements to fill the calculator.
+Result
+Waited for 5 seconds
+<step>
+Last step waited for page load; page loaded and interactive elements are now visible, so ready to fill the form. Verdict: Success.
+MDApp PSI calculator tab is open (tab 17E2). I will fill age=67, set gender to Male, and check comorbidities/lab/radiographic items from the note: cerebrovascular disease, liver disease, BUN ≥30, O2 (room air) 87% → low, and pleural effusion present. Calculate button is index 72.
+Fill the form fields (age, gender) and check the relevant boxes for cerebrovascular disease, liver disease, BUN ≥30, low O2, and pleural effusion, then click Calculate and extract the numerical PSI result.
+Result
+Typed '67'
+Selected dropdown option 'Male' at index 55
+Clicked span
+Clicked label checkbox-state=unchecked "Cerebrovascular disease"
+Clicked span
+Clicked span
+Clicked span
+Clicked input type=submit name=submit
+Waited for 2 seconds
+Query: Pneumonia Severity Index result (numerical value)
+Content in extracted_content_0.md and once in <read_state>.
+<step>
+Clicked Calculate and waited; the calculator displayed a risk class (Class V) but I have not yet extracted the calculator's numeric PSI value from the saved extraction file, so numeric result retrieval is still pending.
+MDApp PSI page is open in tab 17E2. I filled age=67, gender=Male, and selected comorbidities/lab/radiographic findings from the note and clicked Calculate; the page shows Risk Class V. The page content was saved to extracted_content_0.md when the calculator was run.
+Open the saved extraction file extracted_content_0.md to locate and extract the numerical PSI score produced by the web calculator.
+Result
+Read from file extracted_content_0.md.
+<content>
+<url>
+https://www.mdapp.co/pneumonia-severity-index-psi-calculator-247/
+</url>
+<query>
+Pneumonia Severity Index result (numerical value)
+</query>
+<result>
+Unavailable: the page does not provide a single example "PSI result (numerical value)" for a patient. Relevant numerical information present on the page follows.
+
+PSI scoring components (point values shown on page)
+- Demographics
+  - Age: age in years used directly for men; for women subtract 10 from age before using (no per‑year table given).
+  - Nursing home resident: +10 points
+- Comorbidities
+  - Neoplastic disease: +30
+  - Liver disease: +20
+  - Congestive heart failure: +10
+  - Cerebrovascular disease: +10
+  - Renal disease: +10
+- Physical exam findings
+  - Altered mental status: +20
+  - Pulse ≥125/min: +10
+  - Respiratory rate >30/min: +20
+  - Temperature <35°C or ≥40°C: +15
+  - Systolic blood pressure <90 mmHg: (point value not explicitly listed)
+23 more lines...
+</agent_history>
+
+<agent_state>
+<user_request>
+You are a medical AI assistant testing a web calculator.
+
+PATIENT NOTE:
+A 67-year-old male arrived at the emergency department reporting several days of worsening cough, mounting fatigue, and a high fever that he first noted upon waking the previous morning. He stated that his cough, initially nonproductive with mild throat irritation, had evolved into a deeper, more distressing pattern over the last day or so, and he began to experience chills and consistent warmth to the touch. At presentation, he was alert and engaged, conversing readily without any signs of confusion or mental cloudiness. According to him, he lives independently in a single-story residence and has not required ongoing skilled care or around-the-clock supervision. He recalls a neurological event several years ago that temporarily affected his speech and coordination, though he says he eventually recovered with rehabilitative support. He also mentions that he has required periodic evaluations for a medical condition tied to certain aspects of his metabolism, though he reports having remained stable in recent times with no major flare-ups. Nevertheless, he became concerned when his current symptoms failed to improve with usual home measures such as rest and oral hydration. On evaluation, his core temperature was measured at 38.9 degrees Celsius, reflecting a significant fever consistent with the abrupt onset of his symptoms. Physical assessment showed that he was breathing at a rate of about 17 breaths per minute and maintaining a heart rate of approximately 100 beats per minute, which he acknowledged felt faster than normal for him when he attempted mild activity. His blood pressure was recorded as 135 mm Hg on the systolic reading, aligning with a stable circulatory status for someone of his age. He displayed no outward evidence of fluid accumulation in his lower extremities or jugular venous distension, and he denied any chest pain beyond the occasional discomfort from deep coughing. When asked about his general medical history, he stated he had been followed intermittently over the years for a significant but well-controlled liver-related condition, which had not necessitated recent hospital admissions. Initial laboratory results showed a mild disturbance in his acid-base balance, with a pH documented at 7.46, though his clinical examination did not suggest any overt respiratory or metabolic compromise. He was found to have a partial pressure of oxygen of 87 mm Hg on room air, confirming that his oxygen level was somewhat lower than desired for an individual without known chronic lung issues. Additional lab testing highlighted an elevated blood urea measurement of 31 mg/dL, raising suspicion that he might be experiencing increased protein breakdown or a reduced intravascular volume status, which could complicate recovery. His serum sodium concentration was noted to be 132 mEq/L, just below normal limits, which, in conjunction with his ongoing fever and reduced oral intake, could signify evolving electrolyte fluctuations. A hematocrit value of 33% indicated a borderline low red cell volume, though he reported no significant dizziness or lightheadedness beyond what he assumed stemmed from feeling feverish. His measured glucose of 128 mg/dL was slightly above his baseline, which he attributed to decreased appetite and occasional sugary sports drinks he consumed to stay hydrated when his cough worsened. Chest auscultation revealed coarse breath sounds over the right lateral lung fields, and imaging confirmed findings of inflammation and fluid layering within the thoracic cavity, consistent with a localized infectious process and excess fluid accumulation. Despite his evident infection and the presence of fluid in the pleural space, he remained oriented throughout the conversation, recounting details about his daily activities and stressing that he has never relied on institutional living arrangements. The team acknowledged that his prior neurological history and ongoing liver-related concerns, though not actively flaring, could affect his overall resilience. With that in mind, he was prepared for further evaluation and management directed at controlling his acute condition, including monitoring of his oxygen levels, repeating relevant laboratory analyses, and ensuring any unstable parameters were addressed without delay.
+
+QUESTION:
+What is the patient's Pneumonia Severity Index (PSI)? You should use the patient's medical values and health status when they were first admitted to the hospital prior to any treatment.
+
+CRITICAL RULES:
+DO NOT calculate or compute the answer yourself, you MUST use the web calculator to get the answer.
+Your answer will be marked as incorrect if you do this otherwise.
+
+TASK:
+1. Navigate to https://www.mdapp.co/pneumonia-severity-index-psi-calculator-247/
+2. Read the patient note and extract the relevant clinical values
+3. Fill out the ENTIRE calculator form with the values from the note
+4. Click the Calculate button on the webpage
+5. Wait for the result to appear on the page
+6. Extract ONLY the numerical result that the CALCULATOR computed (not your own calculation)
+
+IMPORTANT - Final Response Format:
+After the calculator displays its result, return ONLY this JSON:
+{"answer": <number_from_calculator>}
+
+Examples:
+- {"answer": 83.94}
+- {"answer": 12}
+- {"answer": 2.5}
+
+The answer MUST be the value the web calculator computed, NOT a value you calculated yourself.
+</user_request>
+<file_system>
+<file>
+extracted_content_0.md - 47 lines
+<content>
+<url>
+https://www.mdapp.co/pneumonia-severity-index-psi-calculator-247/
+</url>
+<query>
+Pneumonia Severity Index result (numerical value)
+</query>
+<result>
+... 39 more lines ...
+</result>
+</content>
+</file>
+</file_system>
+<todo_contents>
+[empty todo.md, fill it when applicable]
+</todo_contents>
+<step_info>Step5 maximum:30
+Today:2025-12-03</step_info>
+</agent_state>
+<browser_state>
+<page_stats>18 links, 101 interactive, 0 iframes, 1 scroll containers, 5 shadow(open), 0 shadow(closed), 444 total elements</page_stats>
+Current tab: 17E2
+Available tabs:
+Tab 17E2: https://www.mdapp.co/pneumonia-severity-index-psi-calculator-247/ - Pneumonia Severity Index (PSI)
+
+<page_info>1.7 pages above, 3.8 pages below, 6.5 total pages</page_info>
+
+Interactive elements:
+... 1.7 pages above ...
+|SCROLL|<html /> (1.7 pages above, 3.8 pages below)
+	[10]<label />
+		Systolic blood pressure <90 mmHg
+		*[874]<span />
+	[883]<label />
+		Temperature <35°C or ≥40°C
+		[885]<span />
+	[893]<span />
+	History of:
+	[904]<label />
+		Neoplastic disease
+		[906]<span />
+	[915]<label />
+		Congestive heart failure
+		[917]<span />
+	[926]<label />
+		Cerebrovascular disease
+		[928]<span />
+	[937]<label />
+		Renal disease
+		[939]<span />
+	[948]<label />
+		Liver disease
+		[950]<span />
+	Step 2: Risk Stratification Classes II-V
+	[966]<span />
+	Age
+	|SHADOW(open)|*[54]<input name=a12 autocomplete=on type=number placeholder=years required=true valuemin=0 valuemax=0 valuetext=67 value=67 compound_components=(name=Increment,role=button),(name=Decrement,role=button),(name=Value,role=textbox) />
+	[980]<span />
+	Gender
+	|SHADOW(open)|*[55]<select name=a13 expanded=false compound_components=(name=Dropdown Toggle,role=button),(name=Options,role=listbox,count=3,options=Select|Male|Female) />
+	[1003]<span />
+	Nursing home resident
+	|SHADOW(open)|*[56]<select name=a14 expanded=false compound_components=(name=Dropdown Toggle,role=button),(name=Options,role=listbox,count=2,options=No|Yes,format=numeric) />
+	[1024]<span />
+	Comorbidity:
+	[1035]<label />
+		Neoplastic disease
+		[1037]<span />
+	[1046]<label />
+		Liver disease
+		[1048]<span />
+	[1057]<label />
+		Congestive heart failure
+		[1059]<span />
+	[1068]<label />
+		Cerebrovascular disease
+		[1070]<span />
+	[1079]<label />
+		Renal disease
+		[1081]<span />
+	[1089]<span />
+	Physical Exam findings:
+	[1100]<label />
+		Altered mental status
+		[1102]<span />
+	[1111]<label />
+		Pulse ≥125/minute
+		[1113]<span />
+	[1122]<label />
+		Respiratory rate >30/minute
+		[1124]<span />
+	[1133]<label />
+		Systolic blood pressure <90 mmHg
+		[1135]<span />
+	[1144]<label />
+		Temperature <35°C or ≥40°C
+		[1146]<span />
+	[1154]<span />
+	Lab and Radiographic findings:
+	[1165]<label />
+		Arterial pH <7.35
+		[1167]<span />
+	[1176]<label />
+		Blood urea nitrogen ≥30 mg/dl (11 mmol/liter)
+		[1178]<span />
+	[1187]<label />
+		Sodium <130 mmol/liter
+		[1189]<span />
+	[1198]<label />
+		Glucose ≥250 mg/dl (14 mmol/liter)
+		[1200]<span />
+	[1209]<label />
+		Hematocrit <30%
+		[1211]<span />
+	[1220]<label />
+		Partial pressure of arterial O
+		[1222]<sub />
+		<60 mmHg <30%
+		[1225]<span />
+	[1236]<label />
+		Pleural effusion
+		[1238]<span />
+	|SHADOW(open)|[72]<input type=submit value=Calculate />
+	|SHADOW(open)|[73]<input value=Reset type=reset />
+	[1250]<a />
+		[1252]<i />
+			[1254]<span />
+	[1258]<a title=Get this tool for your website! />
+		[1259]<i />
+			[1261]<span />
+				Embed
+	[1264]<a id=disabled title=You can open a pdf file with the input & results to print and save />
+		[1265]<i />
+			[1267]<span />
+				Print
+	[1270]<a id=share-app title=Share with your friends! />
+		[1271]<i />
+			[1273]<span />
+				Share
+	PSI result: Risk Class V.
+	PSI risk stratification and class recommendations:
+	Risk Class
+	Risk
+	PSI points
+	Mortality risk
+	Recommendation
+	Low
+	n/a
+	0.001
+	Outpatient care
+	II
+	Low
+	≤70
+	0.006
+	Outpatient care
+	III
+	Low
+	71-90
+	0.009
+	Outpatient care, observation admission
+	IV
+	Moderate
+	91-130
+	0.093
+	Hospital admission
+	High
+	>130
+	0.27
+	Hospital admission
+	Disclaimer:
+	This tool should NOT be considered as a substitute for any professional medical service, NOR as a substitute for clinical judgement. Please read the
+	[3195]<a />
+		full disclaimer
+	[1399]<button />
+		Other Tools
+	[1404]<button />
+		Feedback
+	[1409]<button />
+		How to
+		Print
+	Pneumonia Severity Index
+	There are two steps of evaluation in the pneumonia severity score, the first that lists criteria and asks for personal history of certain diseases and a second one with more diverse questions.
+	All of this is aimed to make community acquired pneumonia diagnosis faster and to provide information about individual patient mortality risk.
+	Step 1 consists of two items:
+	The first item checks for the presence of the following:
+	■ Over 50 years of age;
+	■ Altered mental status;
+	■ Pulse ≥125/minute;
+	■ Respiratory rate >30/minute;
+	■ Systolic blood pressure;
+	■ Temperature <35°C or ≥40°.
+	The second item checks for personal history of any of the following:
+	■ Neoplastic disease;
+	■ Congestive heart failure;
+	■ Cerebrovascular disease;
+	■ Renal disease;
+	■ Liver disease.
+	Step 2 is more specific and is aimed at distinguishing between risk classes II to V.
+	The first three questions have to do with patient demographics:
+	■ Gender: Because the PSI accounts for gender related risk factors.
+	■ Age: number of years is directly transformed in points for men whilst for women, 10 is subtracted before the age can be used in the score.
+	■ Nursing home resident status: if positive, adds 10 points to the final score.
+	The other three questions have specific answer choices, as detailed below, along with the number of points they are awarded.
+	Comorbidity:
+	■ Neoplastic disease (+30);
+	■ Liver disease (+20);
+	■ Congestive heart failure (+10);
+	■ Cerebrovascular disease (+10);
+	■ Renal disease (+10).
+	Physical Exam findings:
+	■ Altered mental status (+20);
+	■ Pulse ≥125/minute (+10);
+	■ Respiratory rate >30/minute (+20);
+	■ Systolic blood pressure;
+	Browse specialties
+	[2171]<a />
+		[90]<i />
+		Allergy And Immunology
+	[2178]<a />
+		[91]<i />
+		Anesthesiology
+	[2185]<a />
+		[92]<i />
+		Cardiology
+	[2192]<a />
+		[93]<i />
+		Deficiency
+	[2199]<a />
+		[94]<i />
+		Dermatology
+	[2206]<a />
+		[95]<i />
+		Disability
+	[2213]<a />
+		[96]<i />
+		Emergency
+	[2220]<a />
+		[97]<i />
+		View All
+	Become A Member
+	[2240]<i />
+	Save your favourites!
+	[2246]<i />
+	Get latest medical calculators!
+	[2251]<a />
+		[99]<button />
+			Sign Up
+	Join Us / Social Media
+	[2267]<a />
+	[2275]<a />
+	[2279]<a />
+	[2560]<a />
+</browser_state>
+<read_state>
+<read_state_0>
+Read from file extracted_content_0.md.
+<content>
+<url>
+https://www.mdapp.co/pneumonia-severity-index-psi-calculator-247/
+</url>
+<query>
+Pneumonia Severity Index result (numerical value)
+</query>
+<result>
+Unavailable: the page does not provide a single example "PSI result (numerical value)" for a patient. Relevant numerical information present on the page follows.
+
+PSI scoring components (point values shown on page)
+- Demographics
+  - Age: age in years used directly for men; for women subtract 10 from age before using (no per‑year table given).
+  - Nursing home resident: +10 points
+- Comorbidities
+  - Neoplastic disease: +30
+  - Liver disease: +20
+  - Congestive heart failure: +10
+  - Cerebrovascular disease: +10
+  - Renal disease: +10
+- Physical exam findings
+  - Altered mental status: +20
+  - Pulse ≥125/min: +10
+  - Respiratory rate >30/min: +20
+  - Temperature <35°C or ≥40°C: +15
+  - Systolic blood pressure <90 mmHg: (point value not explicitly listed)
+- Laboratory and radiographic findings
+  - Arterial pH <7.35: (point value not listed)
+  - Blood urea nitrogen ≥30 mg/dl (11 mmol/l): +20
+  - Sodium <130 mmol/l: (point value not listed)
+  - Glucose ≥250 mg/dl (14 mmol/l): +10
+  - Hematocrit <30%: +10
+  - Partial pressure of arterial O2 <60 mmHg: (point value not listed)
+  - Pleural effusion: +10
+
+PSI score → risk class mapping (page)
+- Class I: no positive items in Step 1 (PSI points: n/a)
+- Class II: PSI points ≤ 70 (mortality risk 0.006). Recommendation: Outpatient care with oral antibiotics.
+- Class III: PSI points 71–90 (mortality risk 0.009). Recommendation: Outpatient care, observation/admission.
+- Class IV: PSI points 91–130 (mortality risk 0.093). Recommendation: Hospital admission.
+- Class V: PSI points >130 (mortality risk 0.27). Recommendation: Hospital admission.
+
+Study sample sizes and year (page)
+- Original study (Fine et al.) 1997: 14,199 patients.
+- Validation cohorts referenced: 38,039 inpatients (1991) and 2,287 inpatients/outpatients (PORT cohort).
+
+If you need a numeric PSI score for a particular patient, provide that patient’s values (age, sex, nursing home status, listed comorbidities, listed physical exam findings, and listed laboratory/radiographic results); the page does not include a completed example score.
+</result>
+</content>
+</read_state_0>
+</read_state>
+
+Current screenshot:
+
+{
+  "evaluation_previous_goal": "Previous step left the calculator filled and showing Risk Class V but the numeric PSI value was not yet extracted; status: uncertain (numeric score not yet located).",
+  "memory": "MDApp PSI page is open in tab 17E2, form was filled earlier and the page displays 'PSI result: Risk Class V.' The page extraction file previously saved did not contain a numeric PSI value. Must extract numeric score from the live page DOM.",
+  "next_goal": "Extract the numeric PSI score displayed on the MDApp calculator page (the calculator's computed PSI points) using an extract query focused on PSI/points/score.",
+  "action": [
+    {
+      "extract": {
+        "query": "Find the numeric PSI score/PSI points value computed for the current patient on this page (PSI score, PSI points, numeric result). Return any numbers associated with 'PSI', 'PSI result', 'PSI points', or similar labels.",
+        "extract_links": false,
+        "start_from_char": 0
+      }
+    }
+  ]
+}

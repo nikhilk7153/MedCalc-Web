@@ -1,0 +1,478 @@
+ system 
+You are an AI agent designed to operate in an iterative loop to automate browser tasks. Your ultimate goal is accomplishing the task provided in <user_request>.
+<intro>
+You excel at following tasks:
+1. Navigating complex websites and extracting precise information
+2. Automating form submissions and interactive web actions
+3. Gathering and saving information 
+4. Using your filesystem effectively to decide what to keep in your context
+5. Operate effectively in an agent loop
+6. Efficiently performing diverse web tasks
+</intro>
+<language_settings>
+- Default working language: **English**
+- Always respond in the same language as the user request
+</language_settings>
+<input>
+At every step, your input will consist of: 
+1. <agent_history>: A chronological event stream including your previous actions and their results.
+2. <agent_state>: Current <user_request>, summary of <file_system>, <todo_contents>, and <step_info>.
+3. <browser_state>: Current URL, open tabs, interactive elements indexed for actions, and visible page content.
+4. <browser_vision>: Screenshot of the browser with bounding boxes around interactive elements. If you used screenshot before, this will contain a screenshot.
+5. <read_state> This will be displayed only if your previous action was extract or read_file. This data is only shown in the current step.
+</input>
+<agent_history>
+Agent history will be given as a list of step information as follows:
+<step_{step_number}>:
+Evaluation of Previous Step: Assessment of last action
+Memory: Your memory of this step
+Next Goal: Your goal for this step
+Action Results: Your actions and their results
+</step_{step_number}>
+and system messages wrapped in <sys> tag.
+</agent_history>
+<user_request>
+USER REQUEST: This is your ultimate objective and always remains visible.
+- This has the highest priority. Make the user happy.
+- If the user request is very specific - then carefully follow each step and dont skip or hallucinate steps.
+- If the task is open ended you can plan yourself how to get it done.
+</user_request>
+<browser_state>
+1. Browser State will be given as:
+Current URL: URL of the page you are currently viewing.
+Open Tabs: Open tabs with their ids.
+Interactive Elements: All interactive elements will be provided in format as [index]<type>text</type> where
+- index: Numeric identifier for interaction
+- type: HTML element type (button, input, etc.)
+- text: Element description
+Examples:
+[33]<div>User form</div>
+\t*[35]<button aria-label='Submit form'>Submit</button>
+Note that:
+- Only elements with numeric indexes in [] are interactive
+- (stacked) indentation (with \t) is important and means that the element is a (html) child of the element above (with a lower index)
+- Elements tagged with a star `*[` are the new interactive elements that appeared on the website since the last step - if url has not changed. Your previous actions caused that change. Think if you need to interact with them, e.g. after input you might need to select the right option from the list.
+- Pure text elements without [] are not interactive.
+</browser_state>
+<browser_vision>
+If you used screenshot before, you will be provided with a screenshot of the current page with  bounding boxes around interactive elements. This is your GROUND TRUTH: reason about the image in your thinking to evaluate your progress.
+If an interactive index inside your browser_state does not have text information, then the interactive index is written at the top center of it's element in the screenshot.
+Use screenshot if you are unsure or simply want more information.
+</browser_vision>
+<browser_rules>
+Strictly follow these rules while using the browser and navigating the web:
+- Only interact with elements that have a numeric [index] assigned.
+- Only use indexes that are explicitly provided.
+- If research is needed, open a **new tab** instead of reusing the current one.
+- If the page changes after, for example, an input text action, analyse if you need to interact with new elements, e.g. selecting the right option from the list.
+- By default, only elements in the visible viewport are listed. Use scrolling tools if you suspect relevant content is offscreen which you need to interact with. Scroll ONLY if there are more pixels below or above the page.
+- You can scroll by a specific number of pages using the pages parameter (e.g., 0.5 for half page, 2.0 for two pages).
+- If a captcha appears, attempt solving it if possible. If not, use fallback strategies (e.g., alternative site, backtrack).
+- If expected elements are missing, try refreshing, scrolling, or navigating back.
+- If the page is not fully loaded, use the wait action.
+- You can call extract on specific pages to gather structured semantic information from the entire page, including parts not currently visible.
+- Call extract only if the information you are looking for is not visible in your <browser_state> otherwise always just use the needed text from the <browser_state>.
+- Calling the extract tool is expensive! DO NOT query the same page with the same extract query multiple times. Make sure that you are on the page with relevant information based on the screenshot before calling this tool.
+- If you fill an input field and your action sequence is interrupted, most often something changed e.g. suggestions popped up under the field.
+- If the action sequence was interrupted in previous step due to page changes, make sure to complete any remaining actions that were not executed. For example, if you tried to input text and click a search button but the click was not executed because the page changed, you should retry the click action in your next step.
+- If the <user_request> includes specific page information such as product type, rating, price, location, etc., try to apply filters to be more efficient.
+- The <user_request> is the ultimate goal. If the user specifies explicit steps, they have always the highest priority.
+- If you input into a field, you might need to press enter, click the search button, or select from dropdown for completion.
+- Don't login into a page if you don't have to. Don't login if you don't have the credentials. 
+- There are 2 types of tasks always first think which type of request you are dealing with:
+1. Very specific step by step instructions:
+- Follow them as very precise and don't skip steps. Try to complete everything as requested.
+2. Open ended tasks. Plan yourself, be creative in achieving them.
+- If you get stuck e.g. with logins or captcha in open-ended tasks you can re-evaluate the task and try alternative ways, e.g. sometimes accidentally login pops up, even though there some part of the page is accessible or you get some information via web search.
+- If you reach a PDF viewer, the file is automatically downloaded and you can see its path in <available_file_paths>. You can either read the file or scroll in the page to see more.
+</browser_rules>
+<file_system>
+- You have access to a persistent file system which you can use to track progress, store results, and manage long tasks.
+- Your file system is initialized with a `todo.md`: Use this to keep a checklist for known subtasks. Use `replace_file` tool to update markers in `todo.md` as first action whenever you complete an item. This file should guide your step-by-step execution when you have a long running task.
+- If you are writing a `csv` file, make sure to use double quotes if cell elements contain commas.
+- If the file is too large, you are only given a preview of your file. Use `read_file` to see the full content if necessary.
+- If exists, <available_file_paths> includes files you have downloaded or uploaded by the user. You can only read or upload these files but you don't have write access.
+- If the task is really long, initialize a `results.md` file to accumulate your results.
+- DO NOT use the file system if the task is less than 10 steps!
+</file_system>
+<task_completion_rules>
+You must call the `done` action in one of two cases:
+- When you have fully completed the USER REQUEST.
+- When you reach the final allowed step (`max_steps`), even if the task is incomplete.
+- If it is ABSOLUTELY IMPOSSIBLE to continue.
+The `done` action is your opportunity to terminate and share your findings with the user.
+- Set `success` to `true` only if the full USER REQUEST has been completed with no missing components.
+- If any part of the request is missing, incomplete, or uncertain, set `success` to `false`.
+- You can use the `text` field of the `done` action to communicate your findings and `files_to_display` to send file attachments to the user, e.g. `["results.md"]`.
+- Put ALL the relevant information you found so far in the `text` field when you call `done` action.
+- Combine `text` and `files_to_display` to provide a coherent reply to the user and fulfill the USER REQUEST.
+- You are ONLY ALLOWED to call `done` as a single action. Don't call it together with other actions.
+- If the user asks for specified format, such as "return JSON with following structure", "return a list of format...", MAKE sure to use the right format in your answer.
+- If the user asks for a structured output, your `done` action's schema will be modified. Take this schema into account when solving the task!
+</task_completion_rules>
+<action_rules>
+- You are allowed to use a maximum of 10 actions per step.
+If you are allowed multiple actions, you can specify multiple actions in the list to be executed sequentially (one after another).
+- If the page changes after an action, the sequence is interrupted and you get the new state. You can see this in your agent history when this happens.
+</action_rules>
+<efficiency_guidelines>
+You can output multiple actions in one step. Try to be efficient where it makes sense. Do not predict actions which do not make sense for the current page.
+**Recommended Action Combinations:**
+- `input` + `click` → Fill form field and submit/search in one step
+- `input` + `input` → Fill multiple form fields
+- `click` + `click` → Navigate through multi-step flows (when the page does not navigate between clicks)
+- `scroll` with pages 10 + `extract` → Scroll to the bottom of the page to load more content before extracting structured data
+- File operations + browser actions 
+Do not try multiple different paths in one step. Always have one clear goal per step. 
+Its important that you see in the next step if your action was successful, so do not chain actions which change the browser state multiple times, e.g. 
+- do not use click and then navigate, because you would not see if the click was successful or not.
+- or do not use switch and switch together, because you would not see the state in between.
+- do not use input and then scroll, because you would not see if the input was successful or not.
+</efficiency_guidelines>
+<reasoning_rules>
+Be clear and concise in your decision-making. Exhibit the following reasoning patterns to successfully achieve the <user_request>:
+- Reason about <agent_history> to track progress and context toward <user_request>.
+- Analyze the most recent "Next Goal" and "Action Result" in <agent_history> and clearly state what you previously tried to achieve.
+- Analyze all relevant items in <agent_history>, <browser_state>, <read_state>, <file_system>, <read_state> and the screenshot to understand your state.
+- Explicitly judge success/failure/uncertainty of the last action. Never assume an action succeeded just because it appears to be executed in your last step in <agent_history>. For example, you might have "Action 1/1: Input '2025-05-05' into element 3." in your history even though inputting text failed. Always verify using <browser_vision> (screenshot) as the primary ground truth. If a screenshot is unavailable, fall back to <browser_state>. If the expected change is missing, mark the last action as failed (or uncertain) and plan a recovery.
+- If todo.md is empty and the task is multi-step, generate a stepwise plan in todo.md using file tools.
+- Analyze `todo.md` to guide and track your progress. 
+- If any todo.md items are finished, mark them as complete in the file.
+- Analyze whether you are stuck, e.g. when you repeat the same actions multiple times without any progress. Then consider alternative approaches e.g. scrolling for more context or send_keys to interact with keys directly or different pages.
+- Analyze the <read_state> where one-time information are displayed due to your previous action. Reason about whether you want to keep this information in memory and plan writing them into a file if applicable using the file tools.
+- If you see information relevant to <user_request>, plan saving the information into a file.
+- Before writing data into a file, analyze the <file_system> and check if the file already has some content to avoid overwriting.
+- Decide what concise, actionable context should be stored in memory to inform future reasoning.
+- When ready to finish, state you are preparing to call done and communicate completion/results to the user.
+- Before done, use read_file to verify file contents intended for user output.
+- Always reason about the <user_request>. Make sure to carefully analyze the specific steps and information required. E.g. specific filters, specific form fields, specific information to search. Make sure to always compare the current trajactory with the user request and think carefully if thats how the user requested it.
+</reasoning_rules>
+<examples>
+Here are examples of good output patterns. Use them as reference but never copy them directly.
+<todo_examples>
+  "write_file": {
+    "file_name": "todo.md",
+    "content": "# ArXiv CS.AI Recent Papers Collection Task\n\n## Goal: Collect metadata for 20 most recent papers\n\n## Tasks:\n- [ ] Navigate to https://arxiv.org/list/cs.AI/recent\n- [ ] Initialize papers.md file for storing paper data\n- [ ] Collect paper 1/20: The Automated LLM Speedrunning Benchmark\n- [x] Collect paper 2/20: AI Model Passport\n- [ ] Collect paper 3/20: Embodied AI Agents\n- [ ] Collect paper 4/20: Conceptual Topic Aggregation\n- [ ] Collect paper 5/20: Artificial Intelligent Disobedience\n- [ ] Continue collecting remaining papers from current page\n- [ ] Navigate through subsequent pages if needed\n- [ ] Continue until 20 papers are collected\n- [ ] Verify all 20 papers have complete metadata\n- [ ] Final review and completion"
+  }
+</todo_examples>
+<evaluation_examples>
+- Positive Examples:
+"evaluation_previous_goal": "Successfully navigated to the product page and found the target information. Verdict: Success"
+"evaluation_previous_goal": "Clicked the login button and user authentication form appeared. Verdict: Success"
+- Negative Examples:
+"evaluation_previous_goal": "Failed to input text into the search bar as I cannot see it in the image. Verdict: Failure"
+"evaluation_previous_goal": "Clicked the submit button with index 15 but the form was not submitted successfully. Verdict: Failure"
+</evaluation_examples>
+<memory_examples>
+"memory": "Visited 2 of 5 target websites. Collected pricing data from Amazon ($39.99) and eBay ($42.00). Still need to check Walmart, Target, and Best Buy for the laptop comparison."
+"memory": "Found many pending reports that need to be analyzed in the main page. Successfully processed the first 2 reports on quarterly sales data and moving on to inventory analysis and customer feedback reports."
+</memory_examples>
+<next_goal_examples>
+"next_goal": "Click on the 'Add to Cart' button to proceed with the purchase flow."
+"next_goal": "Extract details from the first item on the page."
+</next_goal_examples>
+</examples>
+<output>
+You must ALWAYS respond with a valid JSON in this exact format:
+{
+  "evaluation_previous_goal": "One-sentence analysis of your last action. Clearly state success, failure, or uncertain.",
+  "memory": "1-3 sentences of specific memory of this step and overall progress. You should put here everything that will help you track progress in future steps. Like counting pages visited, items found, etc.",
+  "next_goal": "State the next immediate goal and action to achieve it, in one clear sentence.",
+  "action":[{"navigate": { "url": "url_value"}}, // ... more actions in sequence]
+}
+Action list should NEVER be empty.
+</output>
+
+
+ user 
+<agent_history>
+Agent initialized
+<step>
+Initialized agent and ready to begin; no prior browser actions performed so nothing to evaluate yet (Success).
+Task: use the MDApp FeverPAIN calculator with patient's initial admission data (pre-treatment). Will extract relevant values from the provided note and input them into the web calculator once loaded.
+Open the FeverPAIN score calculator page at https://www.mdapp.co/feverpain-score-calculator-494/ so I can fill the form using the patient's initial presentation.
+Result
+Opened new tab with URL https://www.mdapp.co/feverpain-score-calculator-494/
+<step>
+Initialized agent and ready to begin; no prior browser actions performed so nothing to evaluate yet (Success).
+Task: use the MDApp FeverPAIN calculator with patient's initial admission data (pre-treatment). Will extract relevant values from the provided note and input them into the web calculator once loaded.
+Open the FeverPAIN score calculator page at https://www.mdapp.co/feverpain-score-calculator-494/ so I can fill the form using the patient's initial presentation.
+Result
+1 validation error for AgentOutput
+  Invalid JSON: EOF while parsing a value at line 1 column 0 [typ......', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.11/v/json_invalid
+<step>
+Opened the FeverPAIN calculator page successfully and inspected the form controls (Success).
+Patient initial presentation: fever (39.4°C), no mention of cough/coryza, symptom duration 7 days (so >3 days), purulent tonsillar exudate, severe tonsillar inflammation requiring steroids — will use these to complete the form.
+Select the appropriate options on the calculator (Fever: Yes; Absence of cough/coryza: Yes; Symptom onset ≤3 days: No; Purulent tonsils: Yes; Severe tonsil inflammation: Yes) and press Calculate.
+Result
+Clicked label "Yes (+1)"
+Clicked label "Yes (+1)"
+Clicked label "No (0)"
+Clicked label "Yes (+1)"
+Clicked label "Yes (+1)"
+Clicked input type=submit name=submit
+Waited for 2 seconds
+</agent_history>
+
+<agent_state>
+<user_request>
+You are a medical AI assistant testing a web calculator.
+
+PATIENT NOTE:
+On Nov 28th, 2020, a 28-year-old man was referred to our emergency department (ED) in Amir Alam Hospital, Tehran, with fever, sore throat, and dysphagia within the previous seven days. The patient had no significant medical history. He received intramuscular penicillin G followed by oral levofloxacin 500 mg/day without improvement before the admission.
+His vital signs were noted for a temperature of 39.4°C, pulse rate of 105 beats/min, blood pressure of 110/60 mmHg, and respiratory rate of 18 per minute. Blood oxygen saturation on room air was 97%. He had bilateral tonsillar enlargement, covered by white exudation. Furthermore, bilateral and tender anterior cervical adenopathy was palpable. The abdominal examination revealed splenomegaly without tenderness. Other physical examinations were unremarkable. The result of complete blood count (CBC) showed 15,600/μL leucocytes with 38% polymorphonuclears and 57% lymphocytes. The peripheral blood smear displayed 37% of atypical lymphocytosis without any blast cells. The liver function tests were within normal limits. The erythrocyte sedimentation rate (ESR) was 90 mm/hr, and C-reactive protein (CRP) was 127 mg/L. Polymerase chain reaction (PCR) test of COVID-19 was negative. The blood culture was negative.
+The patient was admitted with the diagnosis of infectious mononucleosis (IM). Acute EBV infection was confirmed by the positive IgM viral capsid Ag (VCA Ag). The patient's abdominal sonography showed splenomegaly.
+Due to the severity of the patient's dysphagia and the high risk of upper airway obstruction, he received intravenous (IV) dexamethasone 8 mg twice a day. His condition improved partially after three days and was discharged from the hospital with oral prednisolone 30 mg/day.
+Two days after discharge, the patient returned with high-grade fever, throat pain worsening, and dysphagia. Pharyngeal examination showed erythema and bilateral tonsillar swelling with whitish exudate. The ESR was 85 mm/hr.
+The head and neck computed tomography (CT) scan with IV contrast demonstrated bilateral peritonsillar abscess (PTA) (measuring 23 × 45 mm on the right and 14 × 17 mm on the left side) (Figures and ). A chest and abdominal CT scan was done for ruling out lymphoma, which showed splenic enlargement with a wedge-shaped, low-density defect in the peripheral area of the spleen in favor of splenic infarction (). The results of electrocardiography and transthoracic echocardiography were unremarkable.
+Since the patient was treated with various antibiotics before the admission and the history of the first hospitalization, considering resistance organisms such as Fusobacterium necrophorum, IV piperacillin-tazobactam was administered. Also, a bilateral tonsillectomy was performed with no subsequent complications.
+The histopathologic examination of the tonsils showed reactive follicular hyperplasia and abscess formation. Despite negative abscess culture results, IV antibiotic therapy was continued for seven days. As the splenic infarction was asymptomatic, it was managed conservatively. The patient was discharged by oral amoxicillin-clavulanic acid with the favorable condition and recommended to perform an abdominal CT scan two weeks later to follow up splenic infarction. The splenic infarction resolved entirely in the following abdominal CT scan ().
+
+QUESTION:
+What is the patient's FeverPAIN score? You should use the patient's medical values and health status when they were first admitted to the hospital prior to any treatment.
+
+CRITICAL RULES:
+DO NOT calculate or compute the answer yourself, you MUST use the web calculator to get the answer.
+Your answer will be marked as incorrect if you do this otherwise.
+
+TASK:
+1. Navigate to https://www.mdapp.co/feverpain-score-calculator-494/
+2. Read the patient note and extract the relevant clinical values
+3. Fill out the ENTIRE calculator form with the values from the note
+4. Click the Calculate button on the webpage
+5. Wait for the result to appear on the page
+6. Extract ONLY the numerical result that the CALCULATOR computed (not your own calculation)
+
+IMPORTANT - Final Response Format:
+After the calculator displays its result, return ONLY this JSON:
+{"answer": <number_from_calculator>}
+
+Examples:
+- {"answer": 83.94}
+- {"answer": 12}
+- {"answer": 2.5}
+
+The answer MUST be the value the web calculator computed, NOT a value you calculated yourself.
+</user_request>
+<file_system>
+
+</file_system>
+<todo_contents>
+[empty todo.md, fill it when applicable]
+</todo_contents>
+<step_info>Step4 maximum:30
+Today:2025-12-03</step_info>
+</agent_state>
+<browser_state>
+<page_stats>32 links, 77 interactive, 1 iframes, 1 scroll containers, 2 shadow(open), 0 shadow(closed), 1 images, 415 total elements</page_stats>
+Current tab: D610
+Available tabs:
+Tab D610: https://www.mdapp.co/feverpain-score-calculator-494/ - FeverPAIN Score Calculator
+
+<page_info>0.5 pages above, 2.1 pages below, 3.6 total pages</page_info>
+
+Interactive elements:
+... 0.5 pages above ...
+|SCROLL|<html /> (0.5 pages above, 2.1 pages below)
+	[359]<a />
+		[360]<img alt=MDApp />
+	[370]<a />
+		Home
+	[374]<a />
+		Specialties
+	[406]<a />
+		Blog
+	[411]<a />
+		Contact
+	[424]<a id=search-icon title=Search Site... />
+	[428]<a id=social-icon title=Folow Us... />
+	[432]<a id=users-icon title=Be a Valuable Member of Our Community />
+	FeverPAIN Score
+	[682]<a title=To Save This Calculator As A Favourite You Must Be Logged In... />
+	Predicts likelihood of streptococcus caused pharyngitis and whether the strep throat patient will require antibiotics.
+	[685]<a title=Expand Text expanded=false />
+	[696]<hr />
+	[708]<button />
+		Purpose
+	[713]<button />
+		Interpretation
+	[718]<button />
+		Contents
+	[849]<span />
+	Fever in past 24 hours
+	[859]<label />
+		No (0)
+	[863]<label />
+		Yes (+1)
+	[873]<span />
+	Absence of cough or coryza
+	[883]<label />
+		No (0)
+	[887]<label />
+		Yes (+1)
+	[897]<span />
+	Symptom onset ≤3 days
+	[907]<label />
+		No (0)
+	[911]<label />
+		Yes (+1)
+	[921]<span />
+	Purulent tonsils
+	[930]<label />
+		No (0)
+	[934]<label />
+		Yes (+1)
+	[946]<span />
+	Severe tonsil inflammation
+	[956]<label />
+		No (0)
+	[960]<label />
+		Yes (+1)
+	|SHADOW(open)|[62]<input type=submit value=Calculate />
+	|SHADOW(open)|[63]<input value=Reset type=reset />
+	[974]<a />
+		[976]<i />
+			[978]<span />
+	[982]<a title=Get this tool for your website! />
+		[983]<i />
+			[985]<span />
+				Embed
+	[988]<a id=disabled title=You can open a pdf file with the input & results to print and save />
+		[989]<i />
+			[991]<span />
+				Print
+	[994]<a id=share-app title=Share with your friends! />
+		[995]<i />
+			[997]<span />
+				Share
+	FeverPAIN Score = 4
+	Interpretation
+	FeverPAIN score
+	Percent
+	isolation of streptococcus
+	Management
+	13-18%
+	Unlikely streptococcal infection; antibiotics not
+                    recommended.
+	14-18%
+	30-35%
+	Consider delayed antibiotics
+	39-48%
+	4 - 5
+	62-65%
+	Consider antibiotics if symptoms are severe
+	Disclaimer:
+	This tool should NOT be considered as a substitute for any professional medical service, NOR as a substitute for clinical judgement. Please read the
+	*[2378]<a />
+		full disclaimer
+	[1122]<button />
+		Other Tools
+	[1127]<button />
+		Feedback
+	[1132]<button />
+		How to
+		Print
+	|SCROLL[1285]<iframe id=aswift_2 title=Advertisement aria-label=Advertisement /> (scroll)
+	FeverPAIN score explained
+	It is clinically important to discern whether the strep throat patient’s pharyngitis is caused by a viral (most cases) or bacterial agent (streptococcal infections with Group A, Group C or G).
+	The FeverPAIN predicts the likelihood of Streptococcus as the causative organism in children over 3 years of age and adults. The score was found to have better utility than the Centor score at lower levels and helps screen those patients who would forgo antibiotic treatment.
+	The five criteria are:
+	Fever in past 24 hours;
+	Absence of cough or coryza;
+	Symptom onset ≤3 days;
+	Purulent tonsils;
+	Severe tonsil inflammation.
+	Lower FeverPAIN scores suggest that streptococcal infection is unlikely, whilst high scores accompanied by severe symptoms will likely require antibiotics.
+	FeverPAIN score
+	Percent isolation of streptococcus
+	Management
+	13-18%
+	Unlikely streptococcal infection; antibiotics not recommended.
+	14-18%
+	30-35%
+	Consider delayed antibiotics
+	39-48%
+	4 - 5
+	62-65%
+	Consider antibiotics if symptoms are severe
+	The original study cohort consisted in 1760 adults and children aged 3 and over. Three prescribing strategies were compared:
+	Empirical delayed prescribing;
+	Use of the score to direct prescribing;
+	Combination of the score with use of a near patient test (NPT) for streptococcus.
+	Diagnostic studies showed that 63% of those with scores of 4 or higher had a streptococcal infection. The addition of the NPT did not confer additional benefit.
+	The application of the score in an implementation study by Little et al. found that antibiotic use was safely reduced by 30%.
+	An alternative screening method is the
+	[1438]<a />
+		Centor score
+	, which helps diagnose streptococcal pharyingitis in children and adults based on clinical data.
+	References
+	Original references
+	Little P, et al.
+	[1453]<a />
+		Incidence and clinical variables associated with streptococcal throat infections: a prospective diagnostic cohort study
+	. Br J Gen Pract. 2012; 62(604):e787-94.
+	Little P, Hobbs FDR, Moore M, et al.
+	[1459]<a />
+		Clinical score and rapid antigen detection test to guide antibiotic use for sore throats: randomised controlled trial of PRISM (primary care streptococcal management)
+	. BMJ: British Medical Journal. 2013; 347:f5806.
+	Validation
+	Little P, et al.
+	*[1468]<a />
+		PRImary care Streptococcal Management (PRISM) study: identifying clinical variables associated with Lancefield group A β-haemolytic streptococci and Lancefield non-Group A streptococcal throat infections from two cohorts of patients presenting with an acute sore throat
+	Browse specialties
+	[1654]<a />
+		[81]<i />
+		Allergy And Immunology
+	[1660]<a />
+		[82]<i />
+		Anesthesiology
+	[1666]<a />
+		[83]<i />
+		Cardiology
+	[1672]<a />
+		[84]<i />
+		Deficiency
+	[1678]<a />
+		[85]<i />
+		Dermatology
+	[1684]<a />
+		[86]<i />
+		Disability
+	[1690]<a />
+		[87]<i />
+		Emergency
+	[1696]<a />
+		[88]<i />
+		View All
+	Become A Member
+	[1715]<i />
+	Save your favourites!
+	[1720]<i />
+	Get latest medical calculators!
+	[1724]<a />
+		[90]<button />
+			Sign Up
+	Join Us / Social Media
+	[1740]<a />
+	[1747]<a />
+	[1750]<a />
+	*[2031]<a />
+</browser_state>
+
+Current screenshot:
+
+{
+  "evaluation_previous_goal": "Success — I filled the form with the patient's pre-treatment data and clicked Calculate; the calculator displayed a result on the page.",
+  "memory": "Used initial presentation: fever (39.4°C -> Fever=Yes), absence of cough/coryza mentioned (Yes), symptom duration 7 days (>3 days -> Symptom onset ≤3 days = No), purulent tonsils = Yes, severe tonsil inflammation = Yes. The calculator result shown on page is FeverPAIN Score = 4.",
+  "next_goal": "Return the calculator's numerical result in the exact JSON format requested by the user.",
+  "action": [
+    {
+      "done": {
+        "text": "{\"answer\": 4}",
+        "success": true,
+        "files_to_display": null
+      }
+    }
+  ]
+}

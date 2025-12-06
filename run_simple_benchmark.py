@@ -4,9 +4,11 @@ Simple sequential benchmark runner - no parallelization, visible browser
 import asyncio
 import csv
 import json
+import logging
 import os
 import re
 import shutil
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -15,70 +17,72 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Create screenshots directory
+# Create screenshots, trajectories, and logs directories
 SCREENSHOT_DIR = Path("benchmark_screenshots")
 SCREENSHOT_DIR.mkdir(exist_ok=True)
+TRAJECTORY_DIR = Path("benchmark_trajectories")
+TRAJECTORY_DIR.mkdir(exist_ok=True)
+LOGS_DIR = Path("benchmark_logs")
+LOGS_DIR.mkdir(exist_ok=True)
 
-# Calculator name to HTML file mapping
+# Calculator name to MDApp URL mapping
 CALCULATOR_MAPPING = {
-    "Creatinine Clearance (Cockcroft-Gault Equation)": "creatinine-clearance.html",
-    "CKD-EPI Equations for Glomerular Filtration Rate": "ckd-epi.html",
-    "CHA2DS2-VASc Score for Atrial Fibrillation Stroke Risk": "cha2ds2-vasc.html",
-    "Mean Arterial Pressure (MAP)": "mean-arterial-pressure.html",
-    "Body Mass Index (BMI)": "body-weight-suite.html",
-    "Calcium Correction for Hypoalbuminemia": "calcium-correction.html",
-    "Wells' Criteria for Pulmonary Embolism": "wells-pe.html",
-    "MDRD GFR Equation": "mdrd-gfr.html",
-    "Ideal Body Weight": "body-weight-suite.html",
-    "QTc Bazett Calculator": "qtc.html",
-    "Estimated Due Date": "estimated-due-date.html",
-    "Child-Pugh Score for Cirrhosis Mortality": "child-pugh.html",
-    "Wells' Criteria for DVT": "wells-dvt.html",
-    "Revised Cardiac Risk Index for Pre-Operative Risk": "cardiac-risk-index.html",
-    "HEART Score for Major Cardiac Events": "heart-score.html",
-    "Fibrosis-4 (FIB-4) Index for Liver Fibrosis": "fibrosis-4.html",
-    "Centor Score (Modified/McIsaac) for Strep Pharyngitis": "centor-score.html",
-    "Glasgow Coma Score (GCS)": "glasgow-coma-score.html",
-    "Maintenance Fluids Calculations": "maintenance-fluids.html",
-    "MELD Na (UNOS/OPTN)": "meld-na.html",
-    "Steroid Conversion Calculator": "steroid-conversion.html",
-    "HAS-BLED Score for Major Bleeding Risk": "has-bled.html",
-    "Sodium Correction for Hyperglycemia": "sodium-correction.html",
-    "Glasgow-Blatchford Bleeding Score (GBS)": "glasgow-blatchford.html",
-    "APACHE II Score": "apache-ii.html",
-    "PSI Score: Pneumonia Severity Index for CAP": "psi.html",
-    "Serum Osmolality": "serum-osmolality.html",
-    "HOMA-IR (Homeostatic Model Assessment for Insulin Resistance)": "homa-ir.html",
-    "Charlson Comorbidity Index (CCI)": "charlson-cci.html",
-    "FeverPAIN Score for Strep Pharyngitis": "feverpain.html",
-    "Caprini Score for Venous Thromboembolism (2005)": "caprini.html",
-    "Free Water Deficit": "free-water-deficit.html",
-    "Anion Gap": "anion-gap.html",
-    "Fractional Excretion of Sodium (FENa)": "fena.html",
-    "Sequential Organ Failure Assessment (SOFA) Score": "sofa.html",
-    "LDL Calculated": "ldl-calculated.html",
-    "CURB-65 Score for Pneumonia Severity": "curb-65.html",
-    "Framingham Risk Score for Hard Coronary Heart Disease": "framingham-risk.html",
-    "PERC Rule for Pulmonary Embolism": "perc-rule.html",
-    "Morphine Milligram Equivalents (MME) Calculator": "mme.html",
-    "SIRS Criteria": "sirs.html",
-    "QTc Fridericia Calculator": "qtc.html",
-    "QTc Framingham Calculator": "qtc.html",
-    "QTc Hodges Calculator": "qtc.html",
-    "QTc Rautaharju Calculator": "qtc.html",
-    "Body Surface Area Calculator": "body-weight-suite.html",
-    "Target weight": "body-weight-suite.html",
-    "Adjusted Body Weight": "body-weight-suite.html",
-    "Delta Gap": "anion-gap.html",
-    "Delta Ratio": "anion-gap.html",
-    "Albumin Corrected Anion Gap": "anion-gap.html",
-    "Albumin Corrected Delta Gap": "anion-gap.html",
-    "Albumin Corrected Delta Ratio": "anion-gap.html",
-    "Estimated of Conception": "estimated-conception.html",
-    "Estimated Gestational Age": "gestational-age.html"
+    "Creatinine Clearance (Cockcroft-Gault Equation)": "https://www.mdapp.co/creatinine-clearance-calculator-38/",
+    "CKD-EPI Equations for Glomerular Filtration Rate": "https://www.mdapp.co/gfr-calculator-17/",
+    "CHA2DS2-VASc Score for Atrial Fibrillation Stroke Risk": "https://www.mdapp.co/cha2ds2-vasc-score-for-stroke-risk-in-atrial-fibrillation-141/",
+    "Mean Arterial Pressure (MAP)": "https://www.mdapp.co/mean-arterial-pressure-calculator-122/",
+    "Body Mass Index (BMI)": "https://www.mdapp.co/bmi-calculator-64/",
+    "Calcium Correction for Hypoalbuminemia": "https://www.mdapp.co/hypoalbuminemia-corrected-calcium-calculator-103/",
+    "Wells' Criteria for Pulmonary Embolism": "https://www.mdapp.co/wells-criteria-for-pulmonary-embolism-calculator-117/",
+    "MDRD GFR Equation": "https://www.mdapp.co/mdrd-calculator-320/",
+    "Ideal Body Weight": "https://www.mdapp.co/bmi-calculator-64/",  # Using BMI calculator
+    "QTc Bazett Calculator": "https://www.mdapp.co/qtc-calculator-57/",
+    "Estimated Due Date": None,  # Not available on MDApp
+    "Child-Pugh Score for Cirrhosis Mortality": "https://www.mdapp.co/child-pugh-score-calculator-106/",
+    "Wells' Criteria for DVT": "https://www.mdapp.co/wells-score-for-dvt-calculator-121/",
+    "Revised Cardiac Risk Index for Pre-Operative Risk": "https://www.mdapp.co/revised-cardiac-risk-index-rcri-calculator-190/",
+    "HEART Score for Major Cardiac Events": None,  # Not available on MDApp
+    "Fibrosis-4 (FIB-4) Index for Liver Fibrosis": "https://www.mdapp.co/fibrosis-4-fib-4-score-calculator-107/",
+    "Centor Score (Modified/McIsaac) for Strep Pharyngitis": "https://www.mdapp.co/strep-pharyngitis-centor-score-calculator-269/",
+    "Glasgow Coma Score (GCS)": None,  # Not in MDApp CSV
+    "Maintenance Fluids Calculations": "https://www.mdapp.co/iv-maintenance-fluids-calculator-307/",
+    "MELD Na (UNOS/OPTN)": "https://www.mdapp.co/meld-na-score-calculator-174/",
+    "Steroid Conversion Calculator": "https://www.mdapp.co/steroid-conversion-calculator-282/",
+    "HAS-BLED Score for Major Bleeding Risk": "https://www.mdapp.co/has-bled-score-calculator-155/",
+    "Sodium Correction for Hyperglycemia": "https://www.mdapp.co/corrected-sodium-calculator-477/",
+    "Glasgow-Blatchford Bleeding Score (GBS)": "https://www.mdapp.co/glasgow-blatchford-score-gbs-calculator-161/",
+    "APACHE II Score": "https://www.mdapp.co/apache-ii-score-calculator-158/",
+    "PSI Score: Pneumonia Severity Index for CAP": "https://www.mdapp.co/pneumonia-severity-index-psi-calculator-247/",
+    "Serum Osmolality": "https://www.mdapp.co/serum-osmolality-calculator-74/",
+    "HOMA-IR (Homeostatic Model Assessment for Insulin Resistance)": "https://www.mdapp.co/homa-ir-calculator-for-insulin-resistance-482/",
+    "Charlson Comorbidity Index (CCI)": "https://www.mdapp.co/charlson-comorbidity-index-cci-calculator-131/",
+    "FeverPAIN Score for Strep Pharyngitis": "https://www.mdapp.co/feverpain-score-calculator-494/",
+    "Caprini Score for Venous Thromboembolism (2005)": "https://www.mdapp.co/caprini-score-for-dvt-risk-calculator-405/",
+    "Free Water Deficit": "https://www.mdapp.co/free-water-deficit-calculator-126/",
+    "Anion Gap": "https://www.mdapp.co/anion-gap-calculator-92/",
+    "Fractional Excretion of Sodium (FENa)": "https://www.mdapp.co/fena-calculator-44/",
+    "Sequential Organ Failure Assessment (SOFA) Score": "https://www.mdapp.co/sequential-organ-failure-assessment-sofa-score-calculator-184/",
+    "LDL Calculated": "https://www.mdapp.co/ldl-calculator-96/",
+    "CURB-65 Score for Pneumonia Severity": "https://www.mdapp.co/pneumonia-curb-65-score-calculator-151/",
+    "Framingham Risk Score for Hard Coronary Heart Disease": "https://www.mdapp.co/framingham-risk-score-calculator-123/",
+    "PERC Rule for Pulmonary Embolism": "https://www.mdapp.co/perc-rule-calculator-116/",
+    "Morphine Milligram Equivalents (MME) Calculator": "https://www.mdapp.co/steroid-conversion-calculator-282/",  # Note: using steroid converter
+    "SIRS Criteria": None,  # Not available on MDApp
+    "QTc Fridericia Calculator": "https://www.mdapp.co/qtc-calculator-57/",
+    "QTc Framingham Calculator": "https://www.mdapp.co/qtc-calculator-57/",
+    "QTc Hodges Calculator": "https://www.mdapp.co/qtc-calculator-57/",
+    "QTc Rautaharju Calculator": "https://www.mdapp.co/qtc-calculator-57/",
+    "Body Surface Area Calculator": "https://www.mdapp.co/bmi-calculator-64/",  # Using BMI calculator
+    "Target weight": "https://www.mdapp.co/bmi-calculator-64/",
+    "Adjusted Body Weight": "https://www.mdapp.co/bmi-calculator-64/",
+    "Delta Gap": "https://www.mdapp.co/anion-gap-calculator-92/",
+    "Delta Ratio": "https://www.mdapp.co/anion-gap-calculator-92/",
+    "Albumin Corrected Anion Gap": "https://www.mdapp.co/anion-gap-calculator-92/",
+    "Albumin Corrected Delta Gap": "https://www.mdapp.co/anion-gap-calculator-92/",
+    "Albumin Corrected Delta Ratio": "https://www.mdapp.co/anion-gap-calculator-92/",
+    "Estimated of Conception": None,  # Not available on MDApp
+    "Estimated Gestational Age": None,  # Not available on MDApp
 }
-
-BASE_URL = "http://localhost:8000"
 
 
 async def main():
@@ -124,22 +128,19 @@ async def main():
     
     # Create timestamp for this run
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    results_file = f"benchmark_results_simple_{timestamp}.json"
     
     # Run each test
     for i, row in enumerate(test_cases, 1):
         calculator_name = row["Calculator Name"]
-        html_file = CALCULATOR_MAPPING.get(calculator_name)
+        url = CALCULATOR_MAPPING.get(calculator_name)
         
         print(f"\n[{i}/{len(test_cases)}] {calculator_name}")
         
-        if not html_file:
-            print(f"  ⏭️ SKIPPED - No HTML mapping")
+        if not url:
+            print(f"  ⏭️ SKIPPED - No MDApp URL available")
             stats["skipped"] += 1
             continue
-        
-     
-        
-        url = f"{BASE_URL}/{html_file}"
         ground_truth = row["Ground Truth Answer"]
         patient_note = row.get("Patient Note", "")
         question = row.get("Question", "")
@@ -180,12 +181,31 @@ async def main():
         
         task = "\n".join(task_parts)
         
-        # Create fresh browser for this test
-        print(f"  🌐 Starting fresh browser...")
+        # Create fresh browser for this test - use Microsoft Edge
+        print(f"  🌐 Starting fresh browser (Microsoft Edge)...")
         browser = Browser(
-            headless=False,  # Show browser window
-            window_size={'width': 1400, 'height': 1200}
+            headless=False,
+            window_size={'width': 1920, 'height': 1080},
+            executable_path='/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+            disable_security=True,
+            minimum_wait_page_load_time=0.1,
+            wait_for_network_idle_page_load_time=0.25,
         )
+        
+        # Create file paths for this test
+        safe_name = calculator_name.replace('/', '-').replace(' ', '_')[:50]
+        trajectory_path = TRAJECTORY_DIR / f"{i:03d}_{safe_name}_{timestamp}.json"
+        log_path = LOGS_DIR / f"{i:03d}_{safe_name}_{timestamp}.log"
+        
+        # Set up logging to file for this test
+        file_handler = logging.FileHandler(log_path, mode='w', encoding='utf-8')
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        
+        # Add handler to root logger and browser_use loggers
+        root_logger = logging.getLogger()
+        root_logger.addHandler(file_handler)
+        root_logger.setLevel(logging.INFO)
         
         try:
             agent = Agent(
@@ -195,28 +215,34 @@ async def main():
                 max_actions_per_step=10,
                 use_vision=True,  # Enable vision for better form interaction
                 use_thinking=False,  # Disable thinking to avoid timeouts
-                llm_timeout=120  # Increase timeout to 120 seconds
+                llm_timeout=120,  # Increase timeout to 120 seconds
+                save_conversation_path=str(trajectory_path)  # Save full trajectory
             )
             
             history = await agent.run(max_steps=30)
             result = history.final_result()
             
-            # Take webpage screenshot after test completes  
+            # Copy the last vision screenshot (now full-page thanks to browser-use modification)
             screenshot_path = None
             try:
-                await asyncio.sleep(2)  # Wait for result to display
-                
-                safe_name = calculator_name.replace('/', '-').replace(' ', '_')[:50]
                 screenshot_filename = f"{i:03d}_{safe_name}_{timestamp}.png"
                 screenshot_path = SCREENSHOT_DIR / screenshot_filename
                 
-                # Access Playwright page - browser IS the session
-                page = browser.context.pages[0]
-                await page.screenshot(path=str(screenshot_path), full_page=True)
-                    
-                print(f"  📸 Screenshot: {screenshot_path.name}")
+                # Get vision screenshots from agent history (now full-page)
+                screenshots = history.screenshot_paths()
+                if screenshots and len(screenshots) > 0:
+                    last_screenshot = screenshots[-1]
+                    if os.path.exists(last_screenshot):
+                        shutil.copy2(last_screenshot, screenshot_path)
+                        print(f"  📸 Full-page screenshot: {screenshot_path.name}")
+                    else:
+                        print(f"  ⚠️ Screenshot file not found")
+                else:
+                    print(f"  ⚠️ No screenshots in history")
             except Exception as e:
                 print(f"  ⚠️ Screenshot error: {str(e)[:80]}")
+            
+            print(f"  📝 Trajectory saved: {trajectory_path.name}")
             
             # Parse JSON response from agent
             agent_answer = None
@@ -259,7 +285,9 @@ async def main():
                         "result": str(result),
                         "agent_json": final_json,
                         "steps": history.number_of_steps(),
-                        "screenshot": str(screenshot_path) if screenshot_path else None
+                        "screenshot": str(screenshot_path) if screenshot_path else None,
+                        "trajectory": str(trajectory_path),
+                        "log": str(log_path)
                     })
                 else:
                     tolerance = 0.05 * abs(truth_num)
@@ -280,7 +308,9 @@ async def main():
                         "agent_json": final_json,
                         "raw_response": str(result),
                         "steps": history.number_of_steps(),
-                        "screenshot": str(screenshot_path) if screenshot_path else None
+                        "screenshot": str(screenshot_path) if screenshot_path else None,
+                        "trajectory": str(trajectory_path),
+                        "log": str(log_path)
                     })
                 
             except (ValueError, TypeError) as e:
@@ -293,7 +323,9 @@ async def main():
                     "result": str(result),
                     "agent_json": final_json,
                     "steps": history.number_of_steps(),
-                    "screenshot": str(screenshot_path) if screenshot_path else None
+                    "screenshot": str(screenshot_path) if screenshot_path else None,
+                    "trajectory": str(trajectory_path),
+                    "log": str(log_path)
                 })
             
             stats["total"] += 1
@@ -306,10 +338,18 @@ async def main():
                 "calculator": calculator_name,
                 "status": "error",
                 "error": str(e),
-                "screenshot": None
+                "screenshot": None,
+                "trajectory": str(trajectory_path) if 'trajectory_path' in locals() else None,
+                "log": str(log_path) if 'log_path' in locals() else None
             })
         
         finally:
+            # Remove the log file handler
+            if 'file_handler' in locals():
+                file_handler.close()
+                root_logger.removeHandler(file_handler)
+                print(f"  📋 Log saved: {log_path.name}")
+            
             # Always close and cleanup browser after each test
             try:
                 if 'browser' in locals():
@@ -322,10 +362,17 @@ async def main():
                     await asyncio.sleep(1)
             except Exception as cleanup_error:
                 print(f"  ⚠️ Cleanup warning: {str(cleanup_error)[:50]}")
+            
+            # Save results after each iteration
+            with open(results_file, 'w') as f:
+                json.dump({
+                    "stats": stats,
+                    "results": results,
+                    "timestamp": timestamp
+                }, f, indent=2)
+            print(f"  💾 Progress saved ({stats['total']} tests)")
     
-    # Save results
-    results_file = f"benchmark_results_simple_{timestamp}.json"
-    
+    # Save final results
     with open(results_file, 'w') as f:
         json.dump({
             "stats": stats,
@@ -347,6 +394,8 @@ async def main():
     
     print(f"\n📁 Results saved to: {results_file}")
     print(f"📸 Screenshots saved to: {SCREENSHOT_DIR}/")
+    print(f"📝 Trajectories saved to: {TRAJECTORY_DIR}/")
+    print(f"📋 Logs saved to: {LOGS_DIR}/")
     print("="*70)
 
 if __name__ == "__main__":

@@ -1,0 +1,421 @@
+ system 
+You are an AI agent designed to operate in an iterative loop to automate browser tasks. Your ultimate goal is accomplishing the task provided in <user_request>.
+<intro>
+You excel at following tasks:
+1. Navigating complex websites and extracting precise information
+2. Automating form submissions and interactive web actions
+3. Gathering and saving information 
+4. Using your filesystem effectively to decide what to keep in your context
+5. Operate effectively in an agent loop
+6. Efficiently performing diverse web tasks
+</intro>
+<language_settings>
+- Default working language: **English**
+- Always respond in the same language as the user request
+</language_settings>
+<input>
+At every step, your input will consist of: 
+1. <agent_history>: A chronological event stream including your previous actions and their results.
+2. <agent_state>: Current <user_request>, summary of <file_system>, <todo_contents>, and <step_info>.
+3. <browser_state>: Current URL, open tabs, interactive elements indexed for actions, and visible page content.
+4. <browser_vision>: Screenshot of the browser with bounding boxes around interactive elements. If you used screenshot before, this will contain a screenshot.
+5. <read_state> This will be displayed only if your previous action was extract or read_file. This data is only shown in the current step.
+</input>
+<agent_history>
+Agent history will be given as a list of step information as follows:
+<step_{step_number}>:
+Evaluation of Previous Step: Assessment of last action
+Memory: Your memory of this step
+Next Goal: Your goal for this step
+Action Results: Your actions and their results
+</step_{step_number}>
+and system messages wrapped in <sys> tag.
+</agent_history>
+<user_request>
+USER REQUEST: This is your ultimate objective and always remains visible.
+- This has the highest priority. Make the user happy.
+- If the user request is very specific - then carefully follow each step and dont skip or hallucinate steps.
+- If the task is open ended you can plan yourself how to get it done.
+</user_request>
+<browser_state>
+1. Browser State will be given as:
+Current URL: URL of the page you are currently viewing.
+Open Tabs: Open tabs with their ids.
+Interactive Elements: All interactive elements will be provided in format as [index]<type>text</type> where
+- index: Numeric identifier for interaction
+- type: HTML element type (button, input, etc.)
+- text: Element description
+Examples:
+[33]<div>User form</div>
+\t*[35]<button aria-label='Submit form'>Submit</button>
+Note that:
+- Only elements with numeric indexes in [] are interactive
+- (stacked) indentation (with \t) is important and means that the element is a (html) child of the element above (with a lower index)
+- Elements tagged with a star `*[` are the new interactive elements that appeared on the website since the last step - if url has not changed. Your previous actions caused that change. Think if you need to interact with them, e.g. after input you might need to select the right option from the list.
+- Pure text elements without [] are not interactive.
+</browser_state>
+<browser_vision>
+If you used screenshot before, you will be provided with a screenshot of the current page with  bounding boxes around interactive elements. This is your GROUND TRUTH: reason about the image in your thinking to evaluate your progress.
+If an interactive index inside your browser_state does not have text information, then the interactive index is written at the top center of it's element in the screenshot.
+Use screenshot if you are unsure or simply want more information.
+</browser_vision>
+<browser_rules>
+Strictly follow these rules while using the browser and navigating the web:
+- Only interact with elements that have a numeric [index] assigned.
+- Only use indexes that are explicitly provided.
+- If research is needed, open a **new tab** instead of reusing the current one.
+- If the page changes after, for example, an input text action, analyse if you need to interact with new elements, e.g. selecting the right option from the list.
+- By default, only elements in the visible viewport are listed. Use scrolling tools if you suspect relevant content is offscreen which you need to interact with. Scroll ONLY if there are more pixels below or above the page.
+- You can scroll by a specific number of pages using the pages parameter (e.g., 0.5 for half page, 2.0 for two pages).
+- If a captcha appears, attempt solving it if possible. If not, use fallback strategies (e.g., alternative site, backtrack).
+- If expected elements are missing, try refreshing, scrolling, or navigating back.
+- If the page is not fully loaded, use the wait action.
+- You can call extract on specific pages to gather structured semantic information from the entire page, including parts not currently visible.
+- Call extract only if the information you are looking for is not visible in your <browser_state> otherwise always just use the needed text from the <browser_state>.
+- Calling the extract tool is expensive! DO NOT query the same page with the same extract query multiple times. Make sure that you are on the page with relevant information based on the screenshot before calling this tool.
+- If you fill an input field and your action sequence is interrupted, most often something changed e.g. suggestions popped up under the field.
+- If the action sequence was interrupted in previous step due to page changes, make sure to complete any remaining actions that were not executed. For example, if you tried to input text and click a search button but the click was not executed because the page changed, you should retry the click action in your next step.
+- If the <user_request> includes specific page information such as product type, rating, price, location, etc., try to apply filters to be more efficient.
+- The <user_request> is the ultimate goal. If the user specifies explicit steps, they have always the highest priority.
+- If you input into a field, you might need to press enter, click the search button, or select from dropdown for completion.
+- Don't login into a page if you don't have to. Don't login if you don't have the credentials. 
+- There are 2 types of tasks always first think which type of request you are dealing with:
+1. Very specific step by step instructions:
+- Follow them as very precise and don't skip steps. Try to complete everything as requested.
+2. Open ended tasks. Plan yourself, be creative in achieving them.
+- If you get stuck e.g. with logins or captcha in open-ended tasks you can re-evaluate the task and try alternative ways, e.g. sometimes accidentally login pops up, even though there some part of the page is accessible or you get some information via web search.
+- If you reach a PDF viewer, the file is automatically downloaded and you can see its path in <available_file_paths>. You can either read the file or scroll in the page to see more.
+</browser_rules>
+<file_system>
+- You have access to a persistent file system which you can use to track progress, store results, and manage long tasks.
+- Your file system is initialized with a `todo.md`: Use this to keep a checklist for known subtasks. Use `replace_file` tool to update markers in `todo.md` as first action whenever you complete an item. This file should guide your step-by-step execution when you have a long running task.
+- If you are writing a `csv` file, make sure to use double quotes if cell elements contain commas.
+- If the file is too large, you are only given a preview of your file. Use `read_file` to see the full content if necessary.
+- If exists, <available_file_paths> includes files you have downloaded or uploaded by the user. You can only read or upload these files but you don't have write access.
+- If the task is really long, initialize a `results.md` file to accumulate your results.
+- DO NOT use the file system if the task is less than 10 steps!
+</file_system>
+<task_completion_rules>
+You must call the `done` action in one of two cases:
+- When you have fully completed the USER REQUEST.
+- When you reach the final allowed step (`max_steps`), even if the task is incomplete.
+- If it is ABSOLUTELY IMPOSSIBLE to continue.
+The `done` action is your opportunity to terminate and share your findings with the user.
+- Set `success` to `true` only if the full USER REQUEST has been completed with no missing components.
+- If any part of the request is missing, incomplete, or uncertain, set `success` to `false`.
+- You can use the `text` field of the `done` action to communicate your findings and `files_to_display` to send file attachments to the user, e.g. `["results.md"]`.
+- Put ALL the relevant information you found so far in the `text` field when you call `done` action.
+- Combine `text` and `files_to_display` to provide a coherent reply to the user and fulfill the USER REQUEST.
+- You are ONLY ALLOWED to call `done` as a single action. Don't call it together with other actions.
+- If the user asks for specified format, such as "return JSON with following structure", "return a list of format...", MAKE sure to use the right format in your answer.
+- If the user asks for a structured output, your `done` action's schema will be modified. Take this schema into account when solving the task!
+</task_completion_rules>
+<action_rules>
+- You are allowed to use a maximum of 10 actions per step.
+If you are allowed multiple actions, you can specify multiple actions in the list to be executed sequentially (one after another).
+- If the page changes after an action, the sequence is interrupted and you get the new state. You can see this in your agent history when this happens.
+</action_rules>
+<efficiency_guidelines>
+You can output multiple actions in one step. Try to be efficient where it makes sense. Do not predict actions which do not make sense for the current page.
+**Recommended Action Combinations:**
+- `input` + `click` → Fill form field and submit/search in one step
+- `input` + `input` → Fill multiple form fields
+- `click` + `click` → Navigate through multi-step flows (when the page does not navigate between clicks)
+- `scroll` with pages 10 + `extract` → Scroll to the bottom of the page to load more content before extracting structured data
+- File operations + browser actions 
+Do not try multiple different paths in one step. Always have one clear goal per step. 
+Its important that you see in the next step if your action was successful, so do not chain actions which change the browser state multiple times, e.g. 
+- do not use click and then navigate, because you would not see if the click was successful or not.
+- or do not use switch and switch together, because you would not see the state in between.
+- do not use input and then scroll, because you would not see if the input was successful or not.
+</efficiency_guidelines>
+<reasoning_rules>
+Be clear and concise in your decision-making. Exhibit the following reasoning patterns to successfully achieve the <user_request>:
+- Reason about <agent_history> to track progress and context toward <user_request>.
+- Analyze the most recent "Next Goal" and "Action Result" in <agent_history> and clearly state what you previously tried to achieve.
+- Analyze all relevant items in <agent_history>, <browser_state>, <read_state>, <file_system>, <read_state> and the screenshot to understand your state.
+- Explicitly judge success/failure/uncertainty of the last action. Never assume an action succeeded just because it appears to be executed in your last step in <agent_history>. For example, you might have "Action 1/1: Input '2025-05-05' into element 3." in your history even though inputting text failed. Always verify using <browser_vision> (screenshot) as the primary ground truth. If a screenshot is unavailable, fall back to <browser_state>. If the expected change is missing, mark the last action as failed (or uncertain) and plan a recovery.
+- If todo.md is empty and the task is multi-step, generate a stepwise plan in todo.md using file tools.
+- Analyze `todo.md` to guide and track your progress. 
+- If any todo.md items are finished, mark them as complete in the file.
+- Analyze whether you are stuck, e.g. when you repeat the same actions multiple times without any progress. Then consider alternative approaches e.g. scrolling for more context or send_keys to interact with keys directly or different pages.
+- Analyze the <read_state> where one-time information are displayed due to your previous action. Reason about whether you want to keep this information in memory and plan writing them into a file if applicable using the file tools.
+- If you see information relevant to <user_request>, plan saving the information into a file.
+- Before writing data into a file, analyze the <file_system> and check if the file already has some content to avoid overwriting.
+- Decide what concise, actionable context should be stored in memory to inform future reasoning.
+- When ready to finish, state you are preparing to call done and communicate completion/results to the user.
+- Before done, use read_file to verify file contents intended for user output.
+- Always reason about the <user_request>. Make sure to carefully analyze the specific steps and information required. E.g. specific filters, specific form fields, specific information to search. Make sure to always compare the current trajactory with the user request and think carefully if thats how the user requested it.
+</reasoning_rules>
+<examples>
+Here are examples of good output patterns. Use them as reference but never copy them directly.
+<todo_examples>
+  "write_file": {
+    "file_name": "todo.md",
+    "content": "# ArXiv CS.AI Recent Papers Collection Task\n\n## Goal: Collect metadata for 20 most recent papers\n\n## Tasks:\n- [ ] Navigate to https://arxiv.org/list/cs.AI/recent\n- [ ] Initialize papers.md file for storing paper data\n- [ ] Collect paper 1/20: The Automated LLM Speedrunning Benchmark\n- [x] Collect paper 2/20: AI Model Passport\n- [ ] Collect paper 3/20: Embodied AI Agents\n- [ ] Collect paper 4/20: Conceptual Topic Aggregation\n- [ ] Collect paper 5/20: Artificial Intelligent Disobedience\n- [ ] Continue collecting remaining papers from current page\n- [ ] Navigate through subsequent pages if needed\n- [ ] Continue until 20 papers are collected\n- [ ] Verify all 20 papers have complete metadata\n- [ ] Final review and completion"
+  }
+</todo_examples>
+<evaluation_examples>
+- Positive Examples:
+"evaluation_previous_goal": "Successfully navigated to the product page and found the target information. Verdict: Success"
+"evaluation_previous_goal": "Clicked the login button and user authentication form appeared. Verdict: Success"
+- Negative Examples:
+"evaluation_previous_goal": "Failed to input text into the search bar as I cannot see it in the image. Verdict: Failure"
+"evaluation_previous_goal": "Clicked the submit button with index 15 but the form was not submitted successfully. Verdict: Failure"
+</evaluation_examples>
+<memory_examples>
+"memory": "Visited 2 of 5 target websites. Collected pricing data from Amazon ($39.99) and eBay ($42.00). Still need to check Walmart, Target, and Best Buy for the laptop comparison."
+"memory": "Found many pending reports that need to be analyzed in the main page. Successfully processed the first 2 reports on quarterly sales data and moving on to inventory analysis and customer feedback reports."
+</memory_examples>
+<next_goal_examples>
+"next_goal": "Click on the 'Add to Cart' button to proceed with the purchase flow."
+"next_goal": "Extract details from the first item on the page."
+</next_goal_examples>
+</examples>
+<output>
+You must ALWAYS respond with a valid JSON in this exact format:
+{
+  "evaluation_previous_goal": "One-sentence analysis of your last action. Clearly state success, failure, or uncertain.",
+  "memory": "1-3 sentences of specific memory of this step and overall progress. You should put here everything that will help you track progress in future steps. Like counting pages visited, items found, etc.",
+  "next_goal": "State the next immediate goal and action to achieve it, in one clear sentence.",
+  "action":[{"navigate": { "url": "url_value"}}, // ... more actions in sequence]
+}
+Action list should NEVER be empty.
+</output>
+
+
+ user 
+<agent_history>
+Agent initialized
+<step>
+No previous web actions; starting task to open the QTc calculator page. Verdict: Uncertain (page not yet loaded).
+Task: use mdapp QTc calculator with patient HR=112 bpm and QT=413 ms; must not compute manually and must extract calculator output. No files created yet.
+Open the MDApp QTc calculator page (https://www.mdapp.co/qtc-calculator-57/) in a new tab so I can fill the form.
+Result
+Opened new tab with URL https://www.mdapp.co/qtc-calculator-57/
+<step>
+Success — the MDApp QTc calculator page was opened and the form fields are visible.
+MDApp QTc calculator page is open in tab B32C; the HR and QT input fields ([25], [26]), unit dropdown [27], and Calculate button [43] are available.
+Fill HR=112 and QT=413, set units to Miliseconds, click Calculate, and wait for the result to appear.
+Result
+Typed '112'
+Typed '413'
+Got dropdown options for index 27
+Selected dropdown option 'Miliseconds' at index 27
+Clicked input type=submit name=submit
+Waited for 2 seconds
+</agent_history>
+
+<agent_state>
+<user_request>
+You are a medical AI assistant testing a web calculator.
+
+PATIENT NOTE:
+A patient has a heart rate of 112 bpm and a QT interval of 413 msec.
+
+QUESTION:
+Using the Bazett Formula for corrected QT interval, what is the patient's corrected QT interval in terms of msec?
+
+CRITICAL RULES:
+DO NOT calculate or compute the answer yourself, you MUST use the web calculator to get the answer.
+Your answer will be marked as incorrect if you do this otherwise.
+
+TASK:
+1. Navigate to https://www.mdapp.co/qtc-calculator-57/
+2. Read the patient note and extract the relevant clinical values
+3. Fill out the ENTIRE calculator form with the values from the note
+4. Click the Calculate button on the webpage
+5. Wait for the result to appear on the page
+6. Extract ONLY the numerical result that the CALCULATOR computed (not your own calculation)
+
+IMPORTANT - Final Response Format:
+After the calculator displays its result, return ONLY this JSON:
+{"answer": <number_from_calculator>}
+
+Examples:
+- {"answer": 83.94}
+- {"answer": 12}
+- {"answer": 2.5}
+
+The answer MUST be the value the web calculator computed, NOT a value you calculated yourself.
+</user_request>
+<file_system>
+
+</file_system>
+<todo_contents>
+[empty todo.md, fill it when applicable]
+</todo_contents>
+<step_info>Step3 maximum:30
+Today:2025-12-03</step_info>
+</agent_state>
+<browser_state>
+<page_stats>29 links, 62 interactive, 1 iframes, 1 scroll containers, 5 shadow(open), 0 shadow(closed), 1 images, 305 total elements</page_stats>
+Current tab: B32C
+Available tabs:
+Tab B32C: https://www.mdapp.co/qtc-calculator-57/ - QTc Calculator
+
+<page_info>0.3 pages above, 1.9 pages below, 3.2 total pages</page_info>
+
+Interactive elements:
+... 0.3 pages above ...
+|SCROLL|<html /> (0.3 pages above, 1.9 pages below)
+	[342]<a />
+		[343]<img alt=MDApp />
+	[353]<a />
+		Home
+	[357]<a />
+		Specialties
+	[389]<a />
+		Blog
+	[394]<a />
+		Contact
+	[407]<a id=search-icon title=Search Site... />
+	[411]<a id=social-icon title=Folow Us... />
+	[415]<a id=users-icon title=Be a Valuable Member of Our Community />
+	QTc Calculator
+	[665]<a title=To Save This Calculator As A Favourite You Must Be Logged In... />
+	Corrects the QT interval based on its duration on ECG test and the patient’s heart rate.
+	[668]<a title=Expand Text expanded=false />
+	[679]<hr />
+	[691]<button />
+		Purpose
+	[696]<button />
+		Formulas
+	[701]<button />
+		Contents
+	Heart rate/Pulse (HR)
+	|SHADOW(open)|*[25]<input name=hr type=number autocomplete=on placeholder=beats per min required=true valuemin=0 valuemax=0 valuetext=112 value=112 compound_components=(name=Increment,role=button),(name=Decrement,role=button),(name=Value,role=textbox) />
+	QT interval (QT)
+	|SHADOW(open)|*[26]<input name=qt type=number autocomplete=on required=true valuemin=0 valuemax=0 valuetext=413 value=413 compound_components=(name=Increment,role=button),(name=Decrement,role=button),(name=Value,role=textbox) />
+	|SHADOW(open)|*[27]<select name=unit expanded=false compound_components=(name=Dropdown Toggle,role=button),(name=Options,role=listbox,count=2,options=Seconds|Miliseconds) />
+	|SHADOW(open)|[43]<input type=submit value=Calculate />
+	|SHADOW(open)|[44]<input value=Reset type=reset />
+	[829]<a />
+		[831]<i />
+			[833]<span />
+	[837]<a title=Get this tool for your website! />
+		[838]<i />
+			[840]<span />
+				Embed
+	[843]<a id=disabled title=You can open a pdf file with the input & results to print and save />
+		[844]<i />
+			[846]<span />
+				Print
+	[849]<a id=share-app title=Share with your friends! />
+		[850]<i />
+			[852]<span />
+				Share
+	QTc Interval by Bazett’s formula = 0.564 sec OR 564.3 msec
+	QTc Interval by Fridericia’s formula = 0.509 sec OR 508.5 msec
+	QTc Interval by Framingham’s formula = 0.485 sec OR 484.5 msec
+	QTc Interval by Hodges’s formula = 0.504 sec OR 504.0 msec
+	RR Interval = 0.536 sec OR 535.7 msec
+	RR Interval = Please note that as agreed upon by ACC / HRS the normal QTc Interval is below 450 milliseconds for men and below 460 milliseconds for women. No gender specific, any QTc greater than 500 milliseconds is considered highly abnormal, while any value of QTc  smaller than 340 milliseconds may indicate short QT syndrome.
+	Notations used: sec = seconds; msec = milliseconds
+	Disclaimer:
+	This tool should NOT be considered as a substitute for any professional medical service, NOR as a substitute for clinical judgement. Please read the
+	*[2151]<a />
+		full disclaimer
+	[977]<button />
+		Other Tools
+	[982]<button />
+		Feedback
+	[987]<button />
+		How to
+		Print
+	|SCROLL[77]<iframe id=aswift_2 title=Advertisement aria-label=Advertisement /> (scroll)
+	Variables considered
+	The QTc calculator is based on heart rate (pulse rate) in beats per minute and QT interval, either in seconds or miliseconds.
+	■ Heart rate is defined as the number of subsequent contractions of the heart during one minute, in which blood is pumped from the ventricles to the arteries.
+	■ The QT interval is a cardiologic term used for the time in the heart’s electrical cycle between the start of the Q wave and the end of the T wave. This is measured in seconds or in miliseconds, the latter for more precision.
+	QTc formulas
+	The corrected QT interval is calculated based on the following:
+	■ Bazett’s formula: QTc = QT/√(RR in seconds)
+	■ Fridericia’s formula: QTc = QT/(RR
+	0.33
+	■ Framingham’s formula: QTc = QT + 0.154(1-RR)
+	■ Hodges’s formula: QTc = QT + 1.75(HR - 60)
+	According to the ACC/HRS:
+	■ Normal values are lower than 450 milliseconds for men and below 460 milliseconds for women;
+	■ Any QTc value greater than 500 milliseconds is abnormal;
+	■ Any QTc value lower than 340 milliseconds is abnormal and may indicate short QT syndrome.
+	After one comparison study, it was concluded that Fridericia and Framingham correction formulas have the best rate correction and significantly improved prediction while Bazett’s formula overestimated QTC prolongation.
+	Abnormally high or low QTc
+	Values lower than normal may be caused by short QT syndrome which is a condition that in turn leads to arrhythmia. This is not considered to have to do with any underlying structural anomaly of the heart and can appear at any age.
+	A shorter QT interval basically means that the heart takes less time to relax between contractions. This can lead to syncope, dizziness and even complicate to cardiac arrest and sudden death.
+	Prolonged QT syndrome is also indicative of an arrhythmia type and is characteristic by moments in which the heart suddenly beats faster for no particular reason.
+	This increase in contraction frequency that has not been supported by other physiological adaptation can lead to impaired tissue perfusion of the brain.
+	References
+	1. Bazett HC. An analysis of the time-relations of electrocardiograms. Heart 1920; (7): 353–37
+	2. Vandenberk B, Vandael E, Robyns T, Vandenberghe J, Garweg C, Foulon V, Ector J, Willems R.
+	[1230]<a />
+		Which QT Correction Formulae to Use for QT Monitoring?
+	J Am Heart Assoc. 2016; 17;5(6).
+	3. Indik JH, Pearson EC, Fried K, Woosley RL.
+	[1236]<a />
+		Bazett and Fridericia QT correction formulas interfere with measurement of drug-induced changes in QT interval
+	. Heart Rhythm. 2006; 3(9):1003-7.
+	Browse specialties
+	[1493]<a />
+		[64]<i />
+		Allergy And Immunology
+	[1500]<a />
+		[65]<i />
+		Anesthesiology
+	[1507]<a />
+		[66]<i />
+		Cardiology
+	[1514]<a />
+		[67]<i />
+		Deficiency
+	[1521]<a />
+		[68]<i />
+		Dermatology
+	[1528]<a />
+		[69]<i />
+		Disability
+	[1535]<a />
+		[70]<i />
+		Emergency
+	[1542]<a />
+		[71]<i />
+		View All
+	Become A Member
+	[1562]<i />
+	Save your favourites!
+	[1568]<i />
+	Get latest medical calculators!
+	[1573]<a />
+		[73]<button />
+			Sign Up
+	Join Us / Social Media
+	[1589]<a />
+	[1597]<a />
+	[1601]<a />
+</browser_state>
+<read_state>
+<read_state_0>
+Found select dropdown (Index: 27, Type: select, ID: , Name: unit):
+0: text="Seconds", value="1" (selected)
+1: text="Miliseconds", value="0.001"
+
+Use the exact text or value string (without quotes) in select_dropdown(index=27, text=...)
+</read_state_0>
+</read_state>
+
+Current screenshot:
+
+{
+  "evaluation_previous_goal": "Success — the HR and QT were entered, units set to Miliseconds, Calculate was clicked, and the calculator displayed results including Bazett's QTc.",
+  "memory": "Entered HR=112 bpm and QT=413 msec on MDApp QTc calculator; the page shows Bazett’s formula result as 0.564 sec OR 564.3 msec. No files were created.",
+  "next_goal": "Return only the calculator's numerical Bazett QTc result in the exact JSON format requested.",
+  "action": [
+    {
+      "done": {
+        "text": "{\"answer\": 564.3}",
+        "success": true,
+        "files_to_display": null
+      }
+    }
+  ]
+}
