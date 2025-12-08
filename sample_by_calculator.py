@@ -1,11 +1,11 @@
 """
-Sample 3 test cases per calculator from test_data_sampled.csv
+Sample 5 test cases per calculator from test_data_sampled.csv
 """
 import csv
 from collections import defaultdict
 from pathlib import Path
 
-def sample_by_calculator(input_file: str, samples_per_calculator: int = 3):
+def sample_by_calculator(input_file: str, samples_per_calculator: int = 5):
     """Sample n rows per calculator ID"""
     
     # Read all rows
@@ -46,5 +46,5 @@ def sample_by_calculator(input_file: str, samples_per_calculator: int = 3):
     return output_file
 
 if __name__ == "__main__":
-    sample_by_calculator("test_data_sampled.csv", samples_per_calculator=3)
+    sample_by_calculator("test_data_sampled.csv", samples_per_calculator=5)
 

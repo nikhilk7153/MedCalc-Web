@@ -38,7 +38,7 @@ def split_csv_into_chunks(input_file: str, rows_per_chunk: int = 3):
     return num_chunks
 
 if __name__ == "__main__":
-    # Use the sampled file with 3 items per calculator
-    num_chunks = split_csv_into_chunks("test_data_sampled_3_per_calc.csv", rows_per_chunk=33)
+    # Use the sampled file with 5 items per calculator
+    num_chunks = split_csv_into_chunks("test_data_sampled_5_per_calc.csv", rows_per_chunk=55)
     print(f"\n✅ CSV splitting complete! Created {num_chunks} chunks.")
 

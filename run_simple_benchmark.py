@@ -102,11 +102,11 @@ async def main():
     
     # Sample and load test data
     print("📊 Loading test data...")
-    if not os.path.exists('test_data_sampled_3_per_calc.csv'):
+    if not os.path.exists('test_data_sampled_5_per_calc.csv'):
         print("  Creating sampled dataset...")
         os.system('python sample_by_calculator.py')
     
-    with open('test_data_sampled_3_per_calc.csv', 'r', encoding='utf-8') as f:
+    with open('test_data_sampled_5_per_calc.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         test_cases = list(reader)
     
@@ -143,7 +143,12 @@ async def main():
             continue
         ground_truth = row["Ground Truth Answer"]
         patient_note = row.get("Patient Note", "")
-        question = row.get("Question", "")
+        # Override question for Calculator ID 2
+        calculator_id = row.get("Calculator ID", "")
+        if calculator_id == "2":
+            question = "What is the patient's Creatinine Clearance using the Cockroft-Gault Equation in terms of mL/min?"
+        else:
+            question = row.get("Question", "")
         
         # Create task with patient note - LLM must extract entities itself
         task_parts = [
@@ -181,12 +186,16 @@ async def main():
         
         task = "\n".join(task_parts)
         
-        # Create fresh browser for this test - use Microsoft Edge
-        print(f"  🌐 Starting fresh browser (Microsoft Edge)...")
+        # Create fresh browser for this test - use Chrome
+        print(f"  🌐 Starting fresh browser (Chrome)...")
+        chrome_path = '/opt/google/chrome/google-chrome'  # Use resolved Chrome path
+        if not os.path.exists(chrome_path):
+            chrome_path = '/usr/bin/google-chrome'  # Fallback to symlink
         browser = Browser(
             headless=False,
             window_size={'width': 1920, 'height': 1080},
-            executable_path='/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+            executable_path=chrome_path,  # Explicitly use Chrome on Linux
+            channel='chrome',  # Specify Chrome channel
             disable_security=True,
             minimum_wait_page_load_time=0.1,
             wait_for_network_idle_page_load_time=0.25,

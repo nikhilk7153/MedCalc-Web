@@ -160,11 +160,11 @@ async def main():
     
     # Load test data
     print("📊 Loading test data...")
-    if not os.path.exists('test_data_sampled_3_per_calc.csv'):
+    if not os.path.exists('test_data_sampled_5_per_calc.csv'):
         print("  Creating sampled dataset...")
         os.system('python sample_by_calculator.py')
     
-    with open('test_data_sampled_3_per_calc.csv', 'r', encoding='utf-8') as f:
+    with open('test_data_sampled_5_per_calc.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         all_test_cases = list(reader)
     
