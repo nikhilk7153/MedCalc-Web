@@ -25,19 +25,17 @@ def download_and_sample(samples_per_calculator: int = 5, output_file: str = "tes
     # Load the dataset from Hugging Face
     print("📥 Downloading dataset from Hugging Face...")
     try:
-        # Load both train and test splits
-        dataset = load_dataset("nsk7153/MedCalc-Bench-Verified")
+        # Load only the test split
+        dataset = load_dataset("nsk7153/MedCalc-Bench-Verified", split="test")
         print(f"  ✅ Dataset loaded successfully")
-        print(f"  - Train split: {len(dataset['train'])} rows")
-        print(f"  - Test split: {len(dataset['test'])} rows")
+        print(f"  - Test split: {len(dataset)} rows")
         print()
         
-        # Combine train and test splits for sampling
+        # Use only test split for sampling
         all_data = []
-        for split_name, split_data in dataset.items():
-            print(f"  Processing {split_name} split...")
-            for row in split_data:
-                all_data.append(row)
+        print(f"  Processing test split...")
+        for row in dataset:
+            all_data.append(row)
         
         print(f"  Total rows: {len(all_data)}")
         print()

@@ -12,7 +12,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from browser_use import Agent, Browser, ChatOpenAI
+from browser_use import Agent, Browser, ChatOpenAI, ChatGoogle
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -118,19 +118,29 @@ async def main():
     results = []
     
     # Create LLM instance (reused)
-    llm = ChatOpenAI(model="gpt-5-mini")
+    # Support both OpenAI and Gemini models
+    model_name = os.getenv('LLM_MODEL', 'gpt-5-mini')
+    if model_name.startswith('gemini'):
+        llm = ChatGoogle(model=model_name)
+    else:
+        llm = ChatOpenAI(model=model_name)
     
     # Create timestamp for this run
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_file = f"benchmark_results_simple_{timestamp}.json"
     
     # Create timestamped directories
-    SCREENSHOT_DIR = Path(f"benchmark_screenshots_{timestamp}")
-    SCREENSHOT_DIR.mkdir(exist_ok=True)
     TRAJECTORY_DIR = Path(f"benchmark_trajectories_{timestamp}")
     TRAJECTORY_DIR.mkdir(exist_ok=True)
     LOGS_DIR = Path(f"benchmark_logs_{timestamp}")
     LOGS_DIR.mkdir(exist_ok=True)
+    RESULTS_DIR = Path(f"benchmark_results_{timestamp}")
+    RESULTS_DIR.mkdir(exist_ok=True)
+    
+    # Create timestamped screenshot directory (nested under logs)
+    SCREENSHOT_DIR = LOGS_DIR / "screenshots" / f"trajectories_{timestamp}"
+    SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    results_file = RESULTS_DIR / f"benchmark_results_simple_{timestamp}.json"
     
     # Run each test
     for i, row in enumerate(test_cases, 1):
@@ -195,7 +205,6 @@ async def main():
             chrome_path = '/usr/bin/google-chrome'  # Fallback to symlink
         browser = Browser(
             headless=False,
-            window_size={'width': 1920, 'height': 1080},
             executable_path=chrome_path,  # Explicitly use Chrome on Linux
             channel='chrome',  # Specify Chrome channel
             disable_security=True,
@@ -204,9 +213,10 @@ async def main():
         )
         
         # Create file paths for this test
-        safe_name = calculator_name.replace('/', '-').replace(' ', '_')[:50]
-        trajectory_path = TRAJECTORY_DIR / f"{i:03d}_{safe_name}_{timestamp}.json"
-        log_path = LOGS_DIR / f"{i:03d}_{safe_name}_{timestamp}.log"
+        safe_name = calculator_name.replace('/', '-').replace(' ', '_')
+        row_number = row.get("Row Number", str(i))
+        trajectory_path = TRAJECTORY_DIR / f"{i:03d}_row{row_number}_{safe_name}_{timestamp}.json"
+        log_path = LOGS_DIR / f"{i:03d}_row{row_number}_{safe_name}_{timestamp}.log"
         
         # Set up logging to file for this test
         file_handler = logging.FileHandler(log_path, mode='w', encoding='utf-8')
@@ -236,7 +246,7 @@ async def main():
             # Copy the last vision screenshot (now full-page thanks to browser-use modification)
             screenshot_path = None
             try:
-                screenshot_filename = f"{i:03d}_{safe_name}_{timestamp}.png"
+                screenshot_filename = f"{i:03d}_row{row_number}_{safe_name}_{timestamp}.png"
                 screenshot_path = SCREENSHOT_DIR / screenshot_filename
                 
                 # Get vision screenshots from agent history (now full-page)
@@ -251,7 +261,7 @@ async def main():
                 else:
                     print(f"  ⚠️ No screenshots in history")
             except Exception as e:
-                print(f"  ⚠️ Screenshot error: {str(e)[:80]}")
+                print(f"  ⚠️ Screenshot error: {str(e)}")
             
             print(f"  📝 Trajectory saved: {trajectory_path.name}")
             
@@ -287,7 +297,7 @@ async def main():
                 truth_num = float(ground_truth)
                 
                 if agent_num is None:
-                    print(f"  ❌ FAILED - No answer extracted from: {str(result)[:50]}")
+                    print(f"  ❌ FAILED - No answer extracted from: {str(result)}")
                     stats["failed"] += 1
                     results.append({
                         "calculator": calculator_name,
@@ -342,7 +352,7 @@ async def main():
             stats["total"] += 1
             
         except Exception as e:
-            print(f"  ⚠️ ERROR - {str(e)[:100]}")
+            print(f"  ⚠️ ERROR - {str(e)}")
             stats["errors"] += 1
             stats["total"] += 1
             results.append({
@@ -372,7 +382,7 @@ async def main():
                     # Small delay to ensure cleanup
                     await asyncio.sleep(1)
             except Exception as cleanup_error:
-                print(f"  ⚠️ Cleanup warning: {str(cleanup_error)[:50]}")
+                print(f"  ⚠️ Cleanup warning: {str(cleanup_error)}")
             
             # Save results after each iteration
             with open(results_file, 'w') as f:
