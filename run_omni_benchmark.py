@@ -18,12 +18,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Create screenshots, trajectories, and logs directories
-SCREENSHOT_DIR = Path("omni_benchmark_screenshots")
-SCREENSHOT_DIR.mkdir(exist_ok=True)
-TRAJECTORY_DIR = Path("omni_benchmark_trajectories")
-TRAJECTORY_DIR.mkdir(exist_ok=True)
 LOGS_DIR = Path("omni_benchmark_logs")
 LOGS_DIR.mkdir(exist_ok=True)
+TRAJECTORY_DIR = Path("omni_benchmark_trajectories")
+TRAJECTORY_DIR.mkdir(exist_ok=True)
 
 # Calculator name to Omni Calculator URL mapping (from Calculator Websites - Omni Calculator.csv)
 CALCULATOR_MAPPING = {
@@ -36,7 +34,7 @@ CALCULATOR_MAPPING = {
     "Wells' Criteria for Pulmonary Embolism": "https://www.omnicalculator.com/health/wells-pe",
     "MDRD GFR Equation": "https://www.omnicalculator.com/health/glomerular-filtration-rate",
     "Ideal Body Weight": "https://www.omnicalculator.com/health/ideal-weight",
-    "QTc Bazett Calculator": "https://www.omnicalculator.com/health/qtc#bazetts-formula",
+    "QTc Bazett Calculator": "https://www.omnicalculator.com/health/qtc",
     "Estimated Due Date": "https://www.omnicalculator.com/health/pregnancy-due-date",
     "Child-Pugh Score for Cirrhosis Mortality": "https://www.omnicalculator.com/health/child-pugh",
     "Wells' Criteria for DVT": None,  # Not available
@@ -47,7 +45,7 @@ CALCULATOR_MAPPING = {
     "Glasgow Coma Score (GCS)": "https://www.omnicalculator.com/health/gcs",
     "Maintenance Fluids Calculations": "https://www.omnicalculator.com/health/maintenance-fluids-children",
     "MELD Na (UNOS/OPTN)": None,  # Not available
-    "Steroid Conversion Calculator": None,  # Not available
+    "Steroid Conversion Calculator": "https://www.omnicalculator.com/health/steroid",
     "HAS-BLED Score for Major Bleeding Risk": "https://www.omnicalculator.com/health/has-bled",
     "Sodium Correction for Hyperglycemia": None,  # Not available
     "Glasgow-Blatchford Bleeding Score (GBS)": None,  # Not available
@@ -68,9 +66,9 @@ CALCULATOR_MAPPING = {
     "PERC Rule for Pulmonary Embolism": "https://www.omnicalculator.com/health/perc",
     "Morphine Milligram Equivalents (MME) Calculator": None,  # Not available
     "SIRS Criteria": None,  # Not available
-    "QTc Fridericia Calculator": None,  # Not available (only Bazett on Omni)
-    "QTc Framingham Calculator": None,  # Not available
-    "QTc Hodges Calculator": None,  # Not available
+    "QTc Fridericia Calculator": "https://www.omnicalculator.com/health/qtc",
+    "QTc Framingham Calculator": "https://www.omnicalculator.com/health/qtc",
+    "QTc Hodges Calculator": "https://www.omnicalculator.com/health/qtc",
     "QTc Rautaharju Calculator": None,  # Not available
     "Body Surface Area Calculator": None,  # Not available
     "Target weight": None,  # Not available
@@ -109,8 +107,8 @@ async def main():
     # Sample and load test data
     print("📊 Loading test data...")
     if not os.path.exists('test_data_sampled_5_per_calc.csv'):
-        print("  Creating sampled dataset...")
-        os.system('python sample_by_calculator.py')
+        print("  Dataset not found. Downloading from Hugging Face...")
+        os.system('python download_and_sample_dataset.py')
     
     with open('test_data_sampled_5_per_calc.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -130,11 +128,15 @@ async def main():
     results = []
     
     # Create LLM instance (reused)
-    llm = ChatOpenAI(model="gpt-5-nano")
+    llm = ChatOpenAI(model="gpt-5-mini")
     
     # Create timestamp for this run
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     results_file = f"omni_benchmark_results_{timestamp}.json"
+    
+    # Create timestamped screenshot directory
+    SCREENSHOT_DIR = LOGS_DIR / "screenshots" / f"trajectories_{timestamp}"
+    SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
     
     # Run each test
     for i, row in enumerate(test_cases, 1):
@@ -185,7 +187,7 @@ async def main():
             f"Examples:",
             f'- {{"answer": 83.94}}',
             f'- {{"answer": 12}}',
-            f'- {{"answer": 2.5}}',
+            f'- {{"answer": 06/23/2021}}',
             f"",
             f"The answer MUST be the value the web calculator computed, NOT a value you calculated yourself."
         ]
@@ -199,7 +201,6 @@ async def main():
             chrome_path = '/usr/bin/google-chrome'  # Fallback to symlink
         browser = Browser(
             headless=False,
-            window_size={'width': 1920, 'height': 1080},
             executable_path=chrome_path,  # Explicitly use Chrome on Linux
             channel='chrome',  # Specify Chrome channel
             disable_security=True,  # Faster loading
@@ -237,19 +238,19 @@ async def main():
             history = await agent.run(max_steps=30)
             result = history.final_result()
             
-            # Copy the last vision screenshot
+            # Copy the last vision screenshot (now full-page thanks to browser-use modification)
             screenshot_path = None
             try:
                 screenshot_filename = f"{i:03d}_{safe_name}_{timestamp}.png"
                 screenshot_path = SCREENSHOT_DIR / screenshot_filename
                 
-                # Get vision screenshots from agent history
+                # Get vision screenshots from agent history (now full-page)
                 screenshots = history.screenshot_paths()
                 if screenshots and len(screenshots) > 0:
                     last_screenshot = screenshots[-1]
                     if os.path.exists(last_screenshot):
                         shutil.copy2(last_screenshot, screenshot_path)
-                        print(f"  📸 Screenshot: {screenshot_path.name}")
+                        print(f"  📸 Full-page screenshot: {screenshot_path.name}")
                     else:
                         print(f"  ⚠️ Screenshot file not found")
                 else:

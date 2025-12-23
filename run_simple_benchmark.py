@@ -17,13 +17,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Create screenshots, trajectories, and logs directories
-SCREENSHOT_DIR = Path("benchmark_screenshots")
-SCREENSHOT_DIR.mkdir(exist_ok=True)
-TRAJECTORY_DIR = Path("benchmark_trajectories")
-TRAJECTORY_DIR.mkdir(exist_ok=True)
-LOGS_DIR = Path("benchmark_logs")
-LOGS_DIR.mkdir(exist_ok=True)
+# Directories will be created with timestamps in main()
 
 # Calculator name to MDApp URL mapping
 CALCULATOR_MAPPING = {
@@ -103,8 +97,8 @@ async def main():
     # Sample and load test data
     print("📊 Loading test data...")
     if not os.path.exists('test_data_sampled_5_per_calc.csv'):
-        print("  Creating sampled dataset...")
-        os.system('python sample_by_calculator.py')
+        print("  Dataset not found. Downloading from Hugging Face...")
+        os.system('python download_and_sample_dataset.py')
     
     with open('test_data_sampled_5_per_calc.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -130,6 +124,14 @@ async def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     results_file = f"benchmark_results_simple_{timestamp}.json"
     
+    # Create timestamped directories
+    SCREENSHOT_DIR = Path(f"benchmark_screenshots_{timestamp}")
+    SCREENSHOT_DIR.mkdir(exist_ok=True)
+    TRAJECTORY_DIR = Path(f"benchmark_trajectories_{timestamp}")
+    TRAJECTORY_DIR.mkdir(exist_ok=True)
+    LOGS_DIR = Path(f"benchmark_logs_{timestamp}")
+    LOGS_DIR.mkdir(exist_ok=True)
+    
     # Run each test
     for i, row in enumerate(test_cases, 1):
         calculator_name = row["Calculator Name"]
@@ -151,7 +153,7 @@ async def main():
             question = row.get("Question", "")
         
         # Create task with patient note - LLM must extract entities itself
-        task_parts = [
+            task_parts = [
             f"You are a medical AI assistant testing a web calculator.",
             f"",
             f"PATIENT NOTE:",
@@ -168,7 +170,7 @@ async def main():
             f"1. Navigate to {url}",
             f"2. Read the patient note and extract the relevant clinical values",
             f"3. Fill out the ENTIRE calculator form with the values from the note",
-            f"4. Click the Calculate button on the webpage",
+            f"4. The calculator may auto-calculate or you may need to click a button",
             f"5. Wait for the result to appear on the page",
             f"6. Extract ONLY the numerical result that the CALCULATOR computed (not your own calculation)",
             f"",
@@ -179,7 +181,7 @@ async def main():
             f"Examples:",
             f'- {{"answer": 83.94}}',
             f'- {{"answer": 12}}',
-            f'- {{"answer": 2.5}}',
+            f'- {{"answer": 06/23/2021}}',
             f"",
             f"The answer MUST be the value the web calculator computed, NOT a value you calculated yourself."
         ]
