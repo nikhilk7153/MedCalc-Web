@@ -12,6 +12,8 @@ from pathlib import Path
 from browser_use import Agent, Browser, ChatOpenAI
 from dotenv import load_dotenv
 
+from benchmark_evaluation import evaluate_prediction, parse_agent_result
+
 load_dotenv()
 
 # Calculator name to HTML file mapping
@@ -76,6 +78,36 @@ CALCULATOR_MAPPING = {
 BASE_URL = "http://localhost:8000"
 
 
+def _new_bucket() -> dict[str, int]:
+    return {"total": 0, "passed": 0, "failed": 0, "errors": 0, "skipped": 0}
+
+
+def _update_bucket(container: dict[str, dict[str, int]], key: str, status: str) -> None:
+    bucket = container.setdefault(key, _new_bucket())
+    if status == "skipped":
+        bucket["skipped"] += 1
+        return
+    bucket["total"] += 1
+    if status in ("passed", "failed", "errors"):
+        bucket[status] += 1
+
+
+def _metrics_view(container: dict[str, dict[str, int]]) -> dict[str, dict[str, float | int | None]]:
+    view: dict[str, dict[str, float | int | None]] = {}
+    for key, bucket in container.items():
+        total = bucket["total"]
+        accuracy = (bucket["passed"] / total) if total > 0 else None
+        view[key] = {
+            "total": total,
+            "passed": bucket["passed"],
+            "failed": bucket["failed"],
+            "errors": bucket["errors"],
+            "skipped": bucket["skipped"],
+            "end_to_end_accuracy": round(accuracy, 4) if accuracy is not None else None,
+        }
+    return view
+
+
 class CalculatorBenchmark:
     def __init__(self, test_csv_path: str, max_tests: int = None):
         self.test_csv_path = test_csv_path
@@ -86,19 +118,32 @@ class CalculatorBenchmark:
             "passed": 0,
             "failed": 0,
             "errors": 0,
-            "by_calculator": {}
+            "skipped": 0,
+            "by_calculator": {},
+            "by_category": {},
+            "by_output_type": {},
         }
     
     async def run_single_test(self, row: dict, browser: Browser) -> dict:
         """Run a single calculator test"""
         calculator_name = row["Calculator Name"]
+        calculator_id = row.get("Calculator ID", "")
+        row_number = row.get("Row Number")
+        category = row.get("Category", "unknown")
+        output_type = row.get("Output Type", "unknown")
         html_file = CALCULATOR_MAPPING.get(calculator_name)
         
         if not html_file:
             return {
+                "site": "local",
+                "row_number": row_number,
+                "calculator_id": calculator_id,
                 "status": "skipped",
+                "failure_type": "coverage_missing_target",
                 "reason": f"No HTML mapping for {calculator_name}",
-                "calculator": calculator_name
+                "calculator": calculator_name,
+                "category": category,
+                "output_type": output_type,
             }
         
         # Parse relevant entities (inputs)
@@ -106,13 +151,21 @@ class CalculatorBenchmark:
             entities = eval(row["Relevant Entities"])  # Safe in this context
         except Exception as e:
             return {
+                "site": "local",
+                "row_number": row_number,
+                "calculator_id": calculator_id,
                 "status": "error",
+                "failure_type": "input_extraction_error",
                 "reason": f"Failed to parse entities: {str(e)}",
-                "calculator": calculator_name
+                "calculator": calculator_name,
+                "category": category,
+                "output_type": output_type,
             }
         
         url = f"{BASE_URL}/{html_file}"
         ground_truth = row["Ground Truth Answer"]
+        lower_limit = row.get("Lower Limit")
+        upper_limit = row.get("Upper Limit")
         
         # Create task for the agent
         task = self._create_task(calculator_name, url, entities, row.get("Question", ""))
@@ -128,27 +181,60 @@ class CalculatorBenchmark:
             
             history = await agent.run(max_steps=30)
             
-            # Extract result from agent
             result = history.final_result()
-            
-            # Compare with ground truth
-            is_correct = self._compare_results(result, ground_truth, row.get("Lower Limit"), row.get("Upper Limit"))
-            
+            parsed = parse_agent_result(result)
+            scoring = evaluate_prediction(
+                agent_answer=parsed["agent_answer"],
+                ground_truth=ground_truth,
+                output_type=output_type,
+                lower_limit=lower_limit,
+                upper_limit=upper_limit,
+                raw_response=parsed["raw_response"],
+                extraction_method=parsed["extraction_method"],
+            )
+            is_correct = scoring["is_correct"]
+
             return {
+                "site": "local",
+                "row_number": row_number,
+                "calculator_id": calculator_id,
                 "status": "passed" if is_correct else "failed",
+                "failure_type": scoring["failure_type"],
+                "scoring_rule": scoring["scoring_rule"],
                 "calculator": calculator_name,
+                "category": category,
+                "output_type": output_type,
                 "url": url,
-                "ground_truth": ground_truth,
-                "agent_result": result,
+                "ground_truth": scoring["normalized_truth"],
+                "result": scoring["normalized_prediction"],
+                "raw_ground_truth": ground_truth,
+                "raw_lower_limit": lower_limit,
+                "raw_upper_limit": upper_limit,
+                "lower_bound": scoring["lower_bound"],
+                "upper_bound": scoring["upper_bound"],
+                "agent_answer": parsed["agent_answer"],
+                "agent_json": parsed["agent_json"],
+                "raw_response": parsed["raw_response"],
+                "extraction_method": parsed["extraction_method"],
                 "is_correct": is_correct,
-                "steps": history.number_of_steps(),
-                "duration": history.total_duration_seconds()
+                "timing": {
+                    "wall_seconds": history.total_duration_seconds(),
+                    "agent_steps": history.number_of_steps(),
+                    "llm_calls": None,
+                    "total_tokens": None,
+                },
             }
             
         except Exception as e:
             return {
+                "site": "local",
+                "row_number": row_number,
+                "calculator_id": calculator_id,
                 "status": "error",
+                "failure_type": "runtime_exception",
                 "calculator": calculator_name,
+                "category": category,
+                "output_type": output_type,
                 "url": url,
                 "error": str(e)
             }
@@ -175,41 +261,6 @@ class CalculatorBenchmark:
         ])
         
         return "\n".join(task_parts)
-    
-    def _compare_results(self, agent_result: str, ground_truth: str, lower_limit: str = None, upper_limit: str = None) -> bool:
-        """Compare agent result with ground truth"""
-        if not agent_result:
-            return False
-        
-        try:
-            # Extract numbers from strings
-            agent_num = self._extract_number(str(agent_result))
-            truth_num = float(ground_truth)
-            
-            if agent_num is None:
-                return False
-            
-            # Check if within tolerance (5% or within limits if provided)
-            tolerance = 0.05 * abs(truth_num)
-            
-            if lower_limit and upper_limit:
-                lower = float(lower_limit)
-                upper = float(upper_limit)
-                return lower <= agent_num <= upper
-            
-            return abs(agent_num - truth_num) <= tolerance
-            
-        except (ValueError, TypeError):
-            # Fallback to string comparison
-            return str(agent_result).strip() == str(ground_truth).strip()
-    
-    def _extract_number(self, text: str) -> float:
-        """Extract first number from text"""
-        import re
-        numbers = re.findall(r'-?\d+\.?\d*', text)
-        if numbers:
-            return float(numbers[0])
-        return None
     
     async def run_benchmark(self):
         """Run the full benchmark"""
@@ -245,29 +296,30 @@ class CalculatorBenchmark:
             self.results.append(result)
             
             # Update stats
-            self.stats["total"] += 1
             status = result["status"]
+            calculator = result.get("calculator", calculator)
+            category = result.get("category", "unknown")
+            output_type = result.get("output_type", "unknown")
+            
+            _update_bucket(self.stats["by_calculator"], calculator, status)
+            _update_bucket(self.stats["by_category"], category, status)
+            _update_bucket(self.stats["by_output_type"], output_type, status)
             
             if status == "passed":
+                self.stats["total"] += 1
                 self.stats["passed"] += 1
                 print(f"  ✅ PASSED")
             elif status == "failed":
+                self.stats["total"] += 1
                 self.stats["failed"] += 1
-                print(f"  ❌ FAILED - Expected: {result.get('ground_truth')}, Got: {result.get('agent_result')}")
+                print(f"  ❌ FAILED - Expected: {result.get('ground_truth')}, Got: {result.get('result')} ({result.get('failure_type')})")
             elif status == "error":
+                self.stats["total"] += 1
                 self.stats["errors"] += 1
                 print(f"  ⚠️ ERROR - {result.get('error')}")
             else:
+                self.stats["skipped"] += 1
                 print(f"  ⏭️ SKIPPED - {result.get('reason')}")
-            
-            # Update per-calculator stats
-            if calculator not in self.stats["by_calculator"]:
-                self.stats["by_calculator"][calculator] = {"total": 0, "passed": 0, "failed": 0, "errors": 0}
-            
-            calc_stats = self.stats["by_calculator"][calculator]
-            calc_stats["total"] += 1
-            if status in calc_stats:
-                calc_stats[status] += 1
         
         # Close browser properly
         try:
@@ -290,6 +342,8 @@ class CalculatorBenchmark:
         with open(results_file, 'w') as f:
             json.dump({
                 "stats": self.stats,
+                "metrics_by_category": _metrics_view(self.stats["by_category"]),
+                "metrics_by_output_type": _metrics_view(self.stats["by_output_type"]),
                 "results": self.results,
                 "timestamp": timestamp
             }, f, indent=2)
@@ -306,12 +360,14 @@ class CalculatorBenchmark:
         passed = self.stats["passed"]
         failed = self.stats["failed"]
         errors = self.stats["errors"]
+        skipped = self.stats["skipped"]
         
         print(f"\nOverall Results:")
         print(f"  Total Tests:  {total}")
         print(f"  ✅ Passed:    {passed} ({passed/total*100:.1f}%)" if total > 0 else "  ✅ Passed: 0")
         print(f"  ❌ Failed:    {failed} ({failed/total*100:.1f}%)" if total > 0 else "  ❌ Failed: 0")
         print(f"  ⚠️ Errors:    {errors} ({errors/total*100:.1f}%)" if total > 0 else "  ⚠️ Errors: 0")
+        print(f"  ⏭️ Skipped:   {skipped}")
         
         print(f"\nBy Calculator:")
         for calc, stats in self.stats["by_calculator"].items():
@@ -354,6 +410,8 @@ async def main():
             with open(results_file, 'w') as f:
                 json.dump({
                     "stats": benchmark.stats,
+                    "metrics_by_category": _metrics_view(benchmark.stats["by_category"]),
+                    "metrics_by_output_type": _metrics_view(benchmark.stats["by_output_type"]),
                     "results": benchmark.results,
                     "timestamp": timestamp,
                     "chunk_id": args.chunk_id
@@ -368,4 +426,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

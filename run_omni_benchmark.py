@@ -6,14 +6,16 @@ import csv
 import json
 import logging
 import os
-import re
 import shutil
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
 from browser_use import Agent, Browser, ChatOpenAI, ChatGoogle
 from dotenv import load_dotenv
+
+from benchmark_evaluation import evaluate_prediction, parse_agent_result
 
 load_dotenv()
 
@@ -79,6 +81,37 @@ CALCULATOR_MAPPING = {
 }
 
 
+def _new_bucket() -> dict[str, int]:
+    return {"total": 0, "passed": 0, "failed": 0, "errors": 0, "skipped": 0}
+
+
+def _update_bucket(container: dict[str, dict[str, int]], key: str, status: str) -> None:
+    bucket = container.setdefault(key, _new_bucket())
+    if status == "skipped":
+        bucket["skipped"] += 1
+        return
+
+    bucket["total"] += 1
+    if status in ("passed", "failed", "errors"):
+        bucket[status] += 1
+
+
+def _metrics_view(container: dict[str, dict[str, int]]) -> dict[str, dict[str, float | int | None]]:
+    view: dict[str, dict[str, float | int | None]] = {}
+    for key, bucket in container.items():
+        total = bucket["total"]
+        accuracy = (bucket["passed"] / total) if total > 0 else None
+        view[key] = {
+            "total": total,
+            "passed": bucket["passed"],
+            "failed": bucket["failed"],
+            "errors": bucket["errors"],
+            "skipped": bucket["skipped"],
+            "end_to_end_accuracy": round(accuracy, 4) if accuracy is not None else None,
+        }
+    return view
+
+
 async def main():
     """Run all benchmarks sequentially with visible browser"""
     
@@ -119,7 +152,9 @@ async def main():
         "failed": 0,
         "errors": 0,
         "skipped": 0,
-        "by_calculator": {}
+        "by_calculator": {},
+        "by_category": {},
+        "by_output_type": {},
     }
     results = []
     
@@ -152,17 +187,36 @@ async def main():
     for i, row in enumerate(test_cases, 1):
         calculator_name = row["Calculator Name"]
         url = CALCULATOR_MAPPING.get(calculator_name)
+        calculator_id = row.get("Calculator ID", "")
+        row_number = row.get("Row Number", str(i))
+        category = row.get("Category", "unknown")
+        output_type = row.get("Output Type", "unknown")
+        lower_limit = row.get("Lower Limit")
+        upper_limit = row.get("Upper Limit")
         
         print(f"\n[{i}/{len(test_cases)}] {calculator_name}")
         
         if not url:
             print(f"  ⏭️ SKIPPED - No Omni Calculator URL available")
             stats["skipped"] += 1
+            _update_bucket(stats["by_calculator"], calculator_name, "skipped")
+            _update_bucket(stats["by_category"], category, "skipped")
+            _update_bucket(stats["by_output_type"], output_type, "skipped")
+            results.append({
+                "site": "omni",
+                "row_number": row_number,
+                "calculator_id": calculator_id,
+                "calculator": calculator_name,
+                "category": category,
+                "output_type": output_type,
+                "status": "skipped",
+                "failure_type": "coverage_missing_target",
+                "skip_reason": "no_omni_url_mapping",
+            })
             continue
         ground_truth = row["Ground Truth Answer"]
         patient_note = row.get("Patient Note", "")
         # Override question for Calculator ID 2
-        calculator_id = row.get("Calculator ID", "")
         if calculator_id == "2":
             question = "What is the patient's Creatinine Clearance using the Cockroft-Gault Equation in terms of mL/min?"
         else:
@@ -220,7 +274,6 @@ async def main():
         
         # Create file paths for this test
         safe_name = calculator_name.replace('/', '-').replace(' ', '_')
-        row_number = row.get("Row Number", str(i))
         trajectory_path = TRAJECTORY_DIR / f"{i:03d}_row{row_number}_{safe_name}_{timestamp}.json"
         log_path = LOGS_DIR / f"{i:03d}_row{row_number}_{safe_name}_{timestamp}.log"
         
@@ -246,8 +299,10 @@ async def main():
                 save_conversation_path=str(trajectory_path)  # Save full trajectory
             )
             
+            wall_started = time.monotonic()
             history = await agent.run(max_steps=30)
             result = history.final_result()
+            wall_seconds = round(time.monotonic() - wall_started, 3)
             
             # Copy the last vision screenshot (now full-page thanks to browser-use modification)
             screenshot_path = None
@@ -271,100 +326,84 @@ async def main():
             
             print(f"  📝 Trajectory saved: {trajectory_path.name}")
             
-            # Parse JSON response from agent
-            agent_answer = None
-            final_json = None
-            
-            try:
-                # Try to parse as JSON first
-                result_str = str(result).strip()
-                
-                # Extract JSON if embedded in text
-                json_match = re.search(r'\{[^}]*"answer"[^}]*\}', result_str)
-                if json_match:
-                    final_json = json.loads(json_match.group())
-                    agent_answer = final_json.get("answer")
-                else:
-                    # Try parsing entire result as JSON
-                    final_json = json.loads(result_str)
-                    agent_answer = final_json.get("answer")
-            except (json.JSONDecodeError, AttributeError):
-                # Fallback: extract number from text
-                try:
-                    numbers = re.findall(r'-?\d+\.?\d*', result_str)
-                    if numbers:
-                        agent_answer = float(numbers[0])
-                except:
-                    agent_answer = result_str
-            
-            # Compare results
-            try:
-                agent_num = float(agent_answer) if agent_answer is not None else None
-                truth_num = float(ground_truth)
-                
-                if agent_num is None:
-                    print(f"  ❌ FAILED - No answer extracted from: {str(result)}")
-                    stats["failed"] += 1
-                    results.append({
-                        "calculator": calculator_name,
-                        "status": "failed",
-                        "ground_truth": truth_num,
-                        "result": str(result),
-                        "agent_json": final_json,
-                        "steps": history.number_of_steps(),
-                        "screenshot": str(screenshot_path) if screenshot_path else None,
-                        "trajectory": str(trajectory_path),
-                        "log": str(log_path)
-                    })
-                else:
-                    tolerance = 0.05 * abs(truth_num)
-                    is_correct = abs(agent_num - truth_num) <= tolerance
-                    
-                    if is_correct:
-                        print(f"  ✅ PASSED - Got {agent_num}, expected {truth_num}")
-                        stats["passed"] += 1
-                    else:
-                        print(f"  ❌ FAILED - Got {agent_num}, expected {truth_num}")
-                        stats["failed"] += 1
-                    
-                    results.append({
-                        "calculator": calculator_name,
-                        "status": "passed" if is_correct else "failed",
-                        "ground_truth": truth_num,
-                        "result": agent_num,
-                        "agent_json": final_json,
-                        "raw_response": str(result),
-                        "steps": history.number_of_steps(),
-                        "screenshot": str(screenshot_path) if screenshot_path else None,
-                        "trajectory": str(trajectory_path),
-                        "log": str(log_path)
-                    })
-                
-            except (ValueError, TypeError) as e:
-                print(f"  ❌ FAILED - Could not parse result: {result}")
-                stats["failed"] += 1
-                results.append({
-                    "calculator": calculator_name,
-                    "status": "failed",
-                    "ground_truth": ground_truth,
-                    "result": str(result),
-                    "agent_json": final_json,
-                    "steps": history.number_of_steps(),
-                    "screenshot": str(screenshot_path) if screenshot_path else None,
-                    "trajectory": str(trajectory_path),
-                    "log": str(log_path)
-                })
-            
+            parsed = parse_agent_result(result)
+            scoring = evaluate_prediction(
+                agent_answer=parsed["agent_answer"],
+                ground_truth=ground_truth,
+                output_type=output_type,
+                lower_limit=lower_limit,
+                upper_limit=upper_limit,
+                raw_response=parsed["raw_response"],
+                extraction_method=parsed["extraction_method"],
+            )
+
+            status = "passed" if scoring["is_correct"] else "failed"
+            stats[status] += 1
             stats["total"] += 1
+            _update_bucket(stats["by_calculator"], calculator_name, status)
+            _update_bucket(stats["by_category"], category, status)
+            _update_bucket(stats["by_output_type"], output_type, status)
+
+            if scoring["is_correct"]:
+                print(f"  ✅ PASSED - Got {scoring['normalized_prediction']}, expected {scoring['normalized_truth']}")
+            else:
+                print(f"  ❌ FAILED - Got {scoring['normalized_prediction']}, expected {scoring['normalized_truth']} ({scoring['failure_type']})")
+
+            results.append({
+                "site": "omni",
+                "row_number": row_number,
+                "calculator_id": calculator_id,
+                "calculator": calculator_name,
+                "category": category,
+                "output_type": output_type,
+                "status": status,
+                "failure_type": scoring["failure_type"],
+                "scoring_rule": scoring["scoring_rule"],
+                "ground_truth": scoring["normalized_truth"],
+                "result": scoring["normalized_prediction"],
+                "lower_bound": scoring["lower_bound"],
+                "upper_bound": scoring["upper_bound"],
+                "raw_ground_truth": ground_truth,
+                "raw_lower_limit": lower_limit,
+                "raw_upper_limit": upper_limit,
+                "agent_answer": parsed["agent_answer"],
+                "agent_json": parsed["agent_json"],
+                "raw_response": parsed["raw_response"],
+                "extraction_method": parsed["extraction_method"],
+                "timing": {
+                    "wall_seconds": wall_seconds,
+                    "agent_steps": history.number_of_steps(),
+                    "llm_calls": None,
+                    "total_tokens": None,
+                },
+                "screenshot": str(screenshot_path) if screenshot_path else None,
+                "trajectory": str(trajectory_path),
+                "log": str(log_path),
+            })
             
         except Exception as e:
             print(f"  ⚠️ ERROR - {str(e)}")
             stats["errors"] += 1
             stats["total"] += 1
+            _update_bucket(stats["by_calculator"], calculator_name, "errors")
+            _update_bucket(stats["by_category"], category, "errors")
+            _update_bucket(stats["by_output_type"], output_type, "errors")
             results.append({
+                "site": "omni",
+                "row_number": row_number,
+                "calculator_id": calculator_id,
                 "calculator": calculator_name,
+                "category": category,
+                "output_type": output_type,
                 "status": "error",
+                "failure_type": "runtime_exception",
                 "error": str(e),
+                "timing": {
+                    "wall_seconds": None,
+                    "agent_steps": None,
+                    "llm_calls": None,
+                    "total_tokens": None,
+                },
                 "screenshot": None,
                 "trajectory": str(trajectory_path) if 'trajectory_path' in locals() else None,
                 "log": str(log_path) if 'log_path' in locals() else None
@@ -394,6 +433,8 @@ async def main():
             with open(results_file, 'w') as f:
                 json.dump({
                     "stats": stats,
+                    "metrics_by_category": _metrics_view(stats["by_category"]),
+                    "metrics_by_output_type": _metrics_view(stats["by_output_type"]),
                     "results": results,
                     "timestamp": timestamp
                 }, f, indent=2)
@@ -403,6 +444,8 @@ async def main():
     with open(results_file, 'w') as f:
         json.dump({
             "stats": stats,
+            "metrics_by_category": _metrics_view(stats["by_category"]),
+            "metrics_by_output_type": _metrics_view(stats["by_output_type"]),
             "results": results,
             "timestamp": timestamp
         }, f, indent=2)
@@ -427,4 +470,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
