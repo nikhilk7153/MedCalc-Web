@@ -182,6 +182,8 @@ class CalculatorBenchmark:
             history = await agent.run(max_steps=30)
             
             result = history.final_result()
+            # Reuse the same evaluator as external-site runners to keep
+            # comparisons apples-to-apples across benchmark modes.
             parsed = parse_agent_result(result)
             scoring = evaluate_prediction(
                 agent_answer=parsed["agent_answer"],

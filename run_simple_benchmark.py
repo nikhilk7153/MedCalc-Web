@@ -320,6 +320,7 @@ async def main():
             
             print(f"  📝 Trajectory saved: {trajectory_path.name}")
             
+            # Shared parser/scorer keeps MDApp/Omni/local runners aligned.
             parsed = parse_agent_result(result)
             scoring = evaluate_prediction(
                 agent_answer=parsed["agent_answer"],

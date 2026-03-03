@@ -37,6 +37,8 @@ def parse_agent_result(result: Any) -> dict[str, Any]:
             agent_answer = final_json.get("answer")
             extraction_method = "json_full"
     except (json.JSONDecodeError, AttributeError, TypeError):
+        # Fallback keeps behavior compatible with existing runners while tagging
+        # the extraction method so scoring can flag likely mis-extractions later.
         numbers = NUMBER_PATTERN.findall(result_str)
         if numbers:
             agent_answer = float(numbers[0])
@@ -67,6 +69,8 @@ def evaluate_prediction(
     output_type_norm = (output_type or "").strip().lower()
 
     if output_type_norm == "date":
+        # Date tasks are evaluated as exact matches after normalization to avoid
+        # false negatives from format-only differences (MM/DD/YYYY vs ISO).
         truth_date = _parse_date(ground_truth)
         pred_date = _parse_date(agent_answer)
 
@@ -240,6 +244,7 @@ def _numeric_bounds(
     lower = _coerce_float(lower_limit)
     upper = _coerce_float(upper_limit)
     if lower is not None and upper is not None:
+        # Normalize bound ordering because some datasets include negative values.
         return (min(lower, upper), max(lower, upper), "range_limit")
 
     if output_type == "integer":
@@ -251,6 +256,8 @@ def _numeric_bounds(
 
 
 def _contains_correct_numeric(text: str, lower_bound: float, upper_bound: float, output_type: str) -> bool:
+    # Used to distinguish "agent produced usable value but harness grabbed the
+    # wrong token" from genuine incorrect predictions.
     for token in NUMBER_PATTERN.findall(text):
         try:
             value = float(token)
